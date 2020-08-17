@@ -1,14 +1,11 @@
 package com.cordships.flows
 
 import co.paralleluniverse.fibers.Suspendable
-import com.cordships.contracts.AttackContract
 import com.cordships.contracts.GameStateContract
-import com.cordships.states.AttackState
 import com.cordships.states.GameState
 import net.corda.core.contracts.*
 import net.corda.core.flows.*
 import net.corda.core.identity.Party
-import net.corda.core.node.ServiceHub
 import net.corda.core.node.services.Vault
 import net.corda.core.node.services.vault.QueryCriteria
 import net.corda.core.transactions.SignedTransaction
@@ -30,7 +27,7 @@ object AttackFlow {
 
             val me = serviceHub.myInfo.legalIdentities.first()
 
-            val gameStateAndRef = loadInput<GameState>(GameState::class, UniqueIdentifier.fromString(gameId))
+            val gameStateAndRef = loadInput(GameState::class, UniqueIdentifier.fromString(gameId))
             val gameState = gameStateAndRef.state.data
 
             // get the move number from the game state
@@ -41,12 +38,15 @@ object AttackFlow {
 
             val notary = serviceHub.networkMapCache.notaryIdentities.single()
 
-            val startTurnState = AttackState(x, y, me, adversary, outcome)
-
-            val txCommand = Command(AttackContract.Commands.Start(), startTurnState.participants.map { it.owningKey })
+            val txCommand = Command(GameStateContract.Commands.Attack(
+                    x,
+                    y,
+                    me,
+                    adversary,
+                    outcome
+            ), listOf(me.owningKey, adversary.owningKey))
             val txBuilder = TransactionBuilder(notary)
                     .addInputState(gameStateAndRef)
-                    .addOutputState(startTurnState, AttackContract.ID)
                     .addOutputState(gameState, GameStateContract.ID)
                     .addCommand(txCommand)
 
