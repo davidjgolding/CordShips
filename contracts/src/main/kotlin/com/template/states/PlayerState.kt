@@ -9,4 +9,4 @@ import net.corda.core.identity.AbstractParty
 // * State *
 // *********
 @BelongsToContract(TemplateContract::class)
-data class PlayerState(val battleShips: List<Pair<Int,Int>>, override val participants: List<AbstractParty> = listOf()) : ContractState
+data class PlayerState(val battleShipPositions: List<Pair<Int,Int>>, override val participants: List<AbstractParty> = listOf()) : ContractState
