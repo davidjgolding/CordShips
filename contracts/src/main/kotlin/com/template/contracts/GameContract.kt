@@ -28,6 +28,20 @@ class GameContract : Contract {
     class BoardUtils {
         companion object {
 
+            fun checkIfValidBattleShipPlacement(positions: List<Pair<Int, Int>>) : Boolean {
+                for(position in positions) {
+                    if (!checkIfValidBattleShipPlacement(position))
+                        return false
+                }
+                return true
+            }
+
+            private fun checkIfValidBattleShipPlacement(position: Pair<Int, Int>) : Boolean {
+                if(position.first < 0 || position.second > 10)
+                    return false;
+                return true;
+            }
+
             fun checkIfValidStartBoard(board: Array<CharArray>): Boolean {
                 return true
             }

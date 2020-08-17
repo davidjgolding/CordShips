@@ -32,7 +32,7 @@ data class GameState(val players: List<AbstractParty>,
     fun getCurrentPlayerParty(): Party { return currentPlayer }
 
     // Returns a copy of a BoardState object after a move at Pair<x,y>
-    fun returnNewBoardAfterMove(pos: Pair<Int,Int>, me:AnonymousParty, competitor:AnonymousParty): GameState {
+    fun returnNewBoardAfterMove(pos: List<Pair<Int,Int>>, boardBeingAttacked:GameContract.Board): GameState {
 
         // Check if the index is valid
         if (false) throw IllegalStateException("Invalid board index.")
