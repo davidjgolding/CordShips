@@ -1,8 +1,6 @@
 package com.cordships.flows
 
 import co.paralleluniverse.fibers.Suspendable
-import com.cordships.contracts.GameStateContract
-import com.cordships.states.GameState
 import net.corda.core.contracts.*
 import net.corda.core.flows.*
 import net.corda.core.identity.Party

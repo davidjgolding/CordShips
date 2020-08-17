@@ -1,4 +1,4 @@
-package com.template.contracts
+package com.cordships.contracts
 
 import com.cordships.states.PrivateGameState
 import net.corda.core.contracts.CommandData

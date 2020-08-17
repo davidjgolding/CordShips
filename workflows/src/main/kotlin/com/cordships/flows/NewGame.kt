@@ -1,6 +1,5 @@
 package com.cordships.flows
 
-import com.cordships.states.GameState
 import net.corda.core.flows.FlowLogic
 import net.corda.core.flows.StartableByRPC
 import net.corda.core.identity.Party
