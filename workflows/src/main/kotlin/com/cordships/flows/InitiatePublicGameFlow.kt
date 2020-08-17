@@ -8,8 +8,13 @@ import net.corda.core.flows.StartableByRPC
 import net.corda.core.identity.Party
 
 @StartableByRPC
-class NewGame(private val players: List<Party>) : FlowLogic<PublicGameState>() {
+class InitiatePublicGameFlow(private val players: List<Party>) : FlowLogic<PublicGameState>() {
     override fun call(): PublicGameState {
+
+        val newGameState = PublicGameState(
+                setOf(ourIdentity + players)
+        )
+
         return PublicGameState(
             listOf(ourIdentity) + players,
             listOf(),

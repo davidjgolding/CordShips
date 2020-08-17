@@ -1,6 +1,6 @@
 package com.cordships;
 
-import com.cordships.flows.NewGame
+import com.cordships.flows.InitiatePublicGameFlow
 import net.corda.testing.node.MockNetwork
 import net.corda.testing.node.MockNetworkParameters
 import net.corda.testing.node.TestCordapp
@@ -9,7 +9,7 @@ import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 
-class NewGameFlowTests {
+class InitiatePublicGameFlowFlowTests {
     private val network = MockNetwork(MockNetworkParameters(cordappsForAllNodes = listOf(
             TestCordapp.findCordapp("com.cordships.contracts"),
             TestCordapp.findCordapp("com.cordships.flows")
@@ -28,7 +28,7 @@ class NewGameFlowTests {
     @Test
     fun `first player is node starting game`() {
         val players = listOf(bIdentity)
-        val result = a.startFlow(NewGame(players)).get()
+        val result = a.startFlow(InitiatePublicGameFlow(players)).get()
 
         Assert.assertEquals(aIdentity, result.participants.first())
     }
@@ -36,7 +36,7 @@ class NewGameFlowTests {
     @Test
     fun `second player is node b`() {
         val players = listOf(bIdentity)
-        val result = a.startFlow(NewGame(players)).get()
+        val result = a.startFlow(InitiatePublicGameFlow(players)).get()
 
         Assert.assertEquals(bIdentity, result.participants.last())
     }

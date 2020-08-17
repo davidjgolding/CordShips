@@ -3,6 +3,7 @@ package com.cordships.flows
 import co.paralleluniverse.fibers.Suspendable
 import com.cordships.contracts.PrivateGameContract
 import com.cordships.states.PrivateGameState
+import com.cordships.states.Ship
 import net.corda.core.flows.FinalityFlow
 import net.corda.core.flows.FlowLogic
 import net.corda.core.flows.InitiatingFlow
@@ -13,9 +14,7 @@ import net.corda.core.transactions.SignedTransaction
 import net.corda.core.transactions.TransactionBuilder
 import net.corda.core.utilities.ProgressTracker
 
-// *********
-// * Flows *
-// *********
+/** Places all pieces on a gameboard. */
 @InitiatingFlow
 @StartableByRPC
 class PiecePlacement(private val airCraftCarrier: String, private val battleship: String,
@@ -38,13 +37,13 @@ class PiecePlacement(private val airCraftCarrier: String, private val battleship
 
         // Get points/coordinates for all inputs
         val coordinates = mutableListOf<Pair<Int, Int>>()
-        coordinates.addAll(Ship(airCraftCarrier, Ship.ShipSize.AirCraftCarrier).points)
-        coordinates.addAll(Ship(battleship, Ship.ShipSize.BattleShip).points)
-        coordinates.addAll(Ship(cruiser, Ship.ShipSize.Cruiser).points)
-        coordinates.addAll(Ship(destroyer1, Ship.ShipSize.Destroyer).points)
-        coordinates.addAll(Ship(destroyer2, Ship.ShipSize.Destroyer).points)
-        coordinates.addAll(Ship(submarine1, Ship.ShipSize.Submarine).points)
-        coordinates.addAll(Ship(submarine2, Ship.ShipSize.Submarine).points)
+        coordinates.addAll(Ship(airCraftCarrier, Ship.ShipSize.AirCraftCarrier).coordinates)
+        coordinates.addAll(Ship(battleship, Ship.ShipSize.BattleShip).coordinates)
+        coordinates.addAll(Ship(cruiser, Ship.ShipSize.Cruiser).coordinates)
+        coordinates.addAll(Ship(destroyer1, Ship.ShipSize.Destroyer).coordinates)
+        coordinates.addAll(Ship(destroyer2, Ship.ShipSize.Destroyer).coordinates)
+        coordinates.addAll(Ship(submarine1, Ship.ShipSize.Submarine).coordinates)
+        coordinates.addAll(Ship(submarine2, Ship.ShipSize.Submarine).coordinates)
 
 
         val gameBoard = MutableList(10) { MutableList(10) { 0 } }
@@ -68,57 +67,5 @@ class PiecePlacement(private val airCraftCarrier: String, private val battleship
         transactionBuilder.verify(serviceHub)
         val signedTransaction = serviceHub.signInitialTransaction(transactionBuilder)
         return subFlow(FinalityFlow(signedTransaction, emptyList()))
-    }
-}
-
-class Ship(descriptor: String, shipSize: ShipSize) {
-    val points: MutableList<Pair<Int, Int>> = mutableListOf()
-
-    init {
-        // Descriptor format 'A0E', 'A' -> x axis, '0' -> y axis, 'E' -> direction indicator
-        val x = descriptor.toCharArray()[0].toInt() % 65
-        val y = descriptor.toCharArray()[1].toString().toInt() //// RETURN TO TO GET LARGER NUMBERS e.g. 10
-        val direction = descriptor.toCharArray()[2]
-        val startingPoint = Pair(x, y)
-        points.add(startingPoint)
-
-        if (shipSize.length > 1) {
-            val xDirection: Int
-            val yDirection: Int
-            when (direction) {
-                'E' -> {
-                    xDirection = 1
-                    yDirection = 0
-                }
-                'W' -> {
-                    xDirection = -1
-                    yDirection = 0
-                }
-                'N' -> {
-                    xDirection = 0
-                    yDirection = -1
-                }
-                'S' -> {
-                    xDirection = 0
-                    yDirection = 1
-                }
-                else -> {
-                    xDirection = 0
-                    yDirection = 0
-                }
-            }
-            for (i in 1 until shipSize.length) {
-                points.add(Pair(startingPoint.first + (i * xDirection),
-                        startingPoint.second + (i * yDirection)))
-            }
-        }
-    }
-
-    enum class ShipSize(val length: Int) {
-        AirCraftCarrier(5),
-        BattleShip(4),
-        Cruiser(3),
-        Destroyer(2),
-        Submarine(2)
     }
 }

@@ -14,7 +14,7 @@ import net.corda.core.transactions.LedgerTransaction
 /** This contract governs the state evolution of private copies of game states for each player. */
 class PrivateGameContract : Contract {
     companion object {
-        const val ID = "com.cordships.contracts.privategamecontract"
+        const val ID = "com.cordships.contracts.PrivateGameContract"
     }
 
     override fun verify(tx: LedgerTransaction) {

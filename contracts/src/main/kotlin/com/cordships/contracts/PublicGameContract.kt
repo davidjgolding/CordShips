@@ -12,7 +12,7 @@ import net.corda.core.transactions.LedgerTransaction
 class PublicGameContract : Contract {
 
     companion object {
-        const val ID = "com.cordships.contracts.publicgamecontract"
+        const val ID = "com.cordships.contracts.PublicGameContract"
     }
 
     override fun verify(tx: LedgerTransaction) {
