@@ -1,17 +1,20 @@
-package com.template.flows
+package com.cordships.flows
 
 import co.paralleluniverse.fibers.Suspendable
-import com.template.contracts.AttackContract
-import com.template.states.AttackState
-import net.corda.core.contracts.Command
-import net.corda.core.contracts.requireThat
+import com.cordships.contracts.AttackContract
+import com.cordships.contracts.GameStateContract
+import com.cordships.states.AttackState
+import com.cordships.states.GameState
+import net.corda.core.contracts.*
 import net.corda.core.flows.*
 import net.corda.core.identity.Party
-import net.corda.core.serialization.CordaSerializable
+import net.corda.core.node.ServiceHub
+import net.corda.core.node.services.Vault
+import net.corda.core.node.services.vault.QueryCriteria
 import net.corda.core.transactions.SignedTransaction
 import net.corda.core.transactions.TransactionBuilder
-import net.corda.core.utilities.unwrap
 import java.security.InvalidParameterException
+import kotlin.reflect.KClass
 
 object AttackFlow {
     @InitiatingFlow
@@ -19,6 +22,7 @@ object AttackFlow {
     class Initiator(
             val x: Int,
             val y: Int,
+            val gameId: String,
             val adversary: Party
     ) : FlowLogic<SignedTransaction>() {
         @Suspendable
@@ -26,8 +30,14 @@ object AttackFlow {
 
             val me = serviceHub.myInfo.legalIdentities.first()
 
-            val outcome = subFlow(HitQueryFlow.Initiator(adversary, x, y, 0, ""))
+            val gameStateAndRef = loadInput<GameState>(GameState::class, UniqueIdentifier.fromString(gameId))
+            val gameState = gameStateAndRef.state.data
+
+            // get the move number from the game state
+            val outcome = subFlow(HitQueryFlow.Initiator(adversary, x, y, 0, gameId))
                     ?: throw InvalidParameterException("The answer was already requested once")
+
+            // modify the game state with the outcome, next player, next move, etc.
 
             val notary = serviceHub.networkMapCache.notaryIdentities.single()
 
@@ -35,7 +45,9 @@ object AttackFlow {
 
             val txCommand = Command(AttackContract.Commands.Start(), startTurnState.participants.map { it.owningKey })
             val txBuilder = TransactionBuilder(notary)
+                    .addInputState(gameStateAndRef)
                     .addOutputState(startTurnState, AttackContract.ID)
+                    .addOutputState(gameState, GameStateContract.ID)
                     .addCommand(txCommand)
 
             txBuilder.verify(serviceHub)
@@ -47,6 +59,11 @@ object AttackFlow {
             val fullySignedTx = subFlow(CollectSignaturesFlow(partSignedTx, setOf(otherPartySession)))
 
             return subFlow(FinalityFlow(fullySignedTx, setOf(otherPartySession)))
+        }
+
+        private fun <T: ContractState> loadInput(type: KClass<out T>, identifier: UniqueIdentifier): StateAndRef<T> {
+            val criteria = QueryCriteria.LinearStateQueryCriteria(linearId = listOf(identifier), status= Vault.StateStatus.UNCONSUMED)
+            return serviceHub.vaultService.queryBy(type.java, criteria).states.single()
         }
     }
 

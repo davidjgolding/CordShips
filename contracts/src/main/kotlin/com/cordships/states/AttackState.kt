@@ -1,6 +1,6 @@
-package com.template.states
+package com.cordships.states
 
-import com.template.contracts.AttackContract
+import com.cordships.contracts.AttackContract
 import net.corda.core.contracts.BelongsToContract
 import net.corda.core.contracts.ContractState
 import net.corda.core.identity.AbstractParty

@@ -1,4 +1,4 @@
-package com.template.flows
+package com.cordships.flows
 
 import co.paralleluniverse.fibers.Suspendable
 import net.corda.core.flows.FlowLogic
@@ -36,12 +36,17 @@ object HitQueryFlow {
         override fun call() {
             val me = serviceHub.myInfo.legalIdentities.first()
             val request = otherPartySession.receive<AttackCoordinates>().unwrap { it }
+
             val queryId = QueryId(request.moveNumber, request.gameId)
+            // proper verification will require
+            // 1. recording of that info in the database
+            // 2. loading the game state ans see whenever the moveNumber matches to the game
             if (queries.contains(queryId)) {
                 otherPartySession.send(AttackOutcome(request.x, request.y, request.moveNumber, request.gameId, request.attacker, me, null))
             } else {
                 // TODO - add the actual outcome
-                // queries.add(request.moveNumber)
+                // 1. Load the private view and check whenever we hit a ship or miss
+                // queries.add(queryId)
                 otherPartySession.send(AttackOutcome(request.x, request.y, request.moveNumber, request.gameId, request.attacker, me, true))
             }
         }
