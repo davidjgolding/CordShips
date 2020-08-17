@@ -7,15 +7,17 @@ import net.corda.core.contracts.*
 import net.corda.core.identity.AbstractParty
 import net.corda.core.serialization.CordaSerializable
 
-
-// *********
-// * State *
-// *********
-@CordaSerializable
-enum class GameStatus {
-    GAME_IN_PROGRESS, GAME_OVER
-}
-
+/**
+ * The global, public state of a given game of CordShips. This state indicated all public information
+ * including attempted attacks (hits / misses) for each respective players public game board. It also
+ * encapsulates turn logic and will be used to advance play at the end of each players turn.
+ *
+ * @param players All players currently engaged in the game
+ * @param boards A list of all public game boards
+ * @param status A flag indicating the state of the game
+ * @param turnCount The number of turns that has passed
+ * @param linearId A unique id for the game
+ */
 @BelongsToContract(PublicGameContract::class)
 @CordaSerializable
 data class PublicGameState(val players: List<AbstractParty>,
@@ -44,4 +46,10 @@ data class PublicGameState(val players: List<AbstractParty>,
 
         return newGameState
     }
+}
+
+/** A simple enum for representing game status */
+@CordaSerializable
+enum class GameStatus {
+    GAME_IN_PROGRESS, GAME_OVER
 }

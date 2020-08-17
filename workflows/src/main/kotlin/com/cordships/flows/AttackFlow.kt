@@ -1,8 +1,8 @@
 package com.cordships.flows
 
 import co.paralleluniverse.fibers.Suspendable
-import com.cordships.contracts.GameStateContract
-import com.cordships.states.GameState
+import com.cordships.contracts.PublicGameContract
+import com.cordships.states.PublicGameState
 import net.corda.core.contracts.*
 import net.corda.core.flows.*
 import net.corda.core.identity.Party
@@ -27,7 +27,7 @@ object AttackFlow {
 
             val me = serviceHub.myInfo.legalIdentities.first()
 
-            val gameStateAndRef = loadInput(GameState::class, UniqueIdentifier.fromString(gameId))
+            val gameStateAndRef = loadInput(PublicGameState::class, UniqueIdentifier.fromString(gameId))
             val gameState = gameStateAndRef.state.data
 
             // get the move number from the game state
@@ -38,7 +38,7 @@ object AttackFlow {
 
             val notary = serviceHub.networkMapCache.notaryIdentities.single()
 
-            val txCommand = Command(GameStateContract.Commands.Attack(
+            val txCommand = Command(PublicGameContract.Commands.Attack(
                     x,
                     y,
                     me,
@@ -47,7 +47,7 @@ object AttackFlow {
             ), listOf(me.owningKey, adversary.owningKey))
             val txBuilder = TransactionBuilder(notary)
                     .addInputState(gameStateAndRef)
-                    .addOutputState(gameState, GameStateContract.ID)
+                    .addOutputState(gameState, PublicGameContract.ID)
                     .addCommand(txCommand)
 
             txBuilder.verify(serviceHub)

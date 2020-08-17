@@ -1,4 +1,4 @@
-package com.template.contracts
+package com.cordships.contracts
 
 import com.cordships.states.PrivateGameState
 import net.corda.core.contracts.CommandData
@@ -10,6 +10,8 @@ import net.corda.core.transactions.LedgerTransaction
 // ************
 // * Contract *
 // ************
+
+/** This contract governs the state evolution of private copies of game states for each player. */
 class PrivateGameContract : Contract {
     companion object {
         const val ID = "com.cordships.contracts.privategamecontract"
