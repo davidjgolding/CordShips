@@ -1,6 +1,6 @@
 package com.template.contracts
 
-import com.cordships.states.PlayerState
+import com.cordships.states.PrivateGameState
 import net.corda.core.contracts.CommandData
 import net.corda.core.contracts.Contract
 import net.corda.core.contracts.requireSingleCommand
@@ -10,9 +10,9 @@ import net.corda.core.transactions.LedgerTransaction
 // ************
 // * Contract *
 // ************
-class PlayerContract : Contract {
+class PrivateGameContract : Contract {
     companion object {
-        const val ID = "com.cordships.contracts.playercontract"
+        const val ID = "com.cordships.contracts.privategamecontract"
     }
 
     override fun verify(tx: LedgerTransaction) {
@@ -25,7 +25,7 @@ class PlayerContract : Contract {
 
                 "There should be no input state." using (tx.inputs.isEmpty())
                 "There should be one output state." using (tx.outputs.size == 1)
-                "The output state should be of type BoardState." using (tx.outputs[0].data is PlayerState)
+                "The output state should be of type BoardState." using (tx.outputs[0].data is PrivateGameState)
             }
         }
     }

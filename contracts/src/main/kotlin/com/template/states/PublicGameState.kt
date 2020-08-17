@@ -2,10 +2,9 @@ package com.cordships.states
 
 import com.cordships.Board
 import com.cordships.BoardUtils
-import com.cordships.contracts.GameContract
+import com.cordships.contracts.PublicGameContract
 import net.corda.core.contracts.*
 import net.corda.core.identity.AbstractParty
-import net.corda.core.identity.Party
 import net.corda.core.serialization.CordaSerializable
 
 
@@ -17,13 +16,13 @@ enum class GameStatus {
     GAME_IN_PROGRESS, GAME_OVER
 }
 
-@BelongsToContract(GameContract::class)
+@BelongsToContract(PublicGameContract::class)
 @CordaSerializable
-data class GameState(val players: List<AbstractParty>,
-                     val boards: List<Board>,
-                     val status: GameStatus = GameStatus.GAME_IN_PROGRESS,
-                     val turnCount: Int,
-                     override val linearId: UniqueIdentifier = UniqueIdentifier()): LinearState {
+data class PublicGameState(val players: List<AbstractParty>,
+                           val boards: List<Board>,
+                           val status: GameStatus = GameStatus.GAME_IN_PROGRESS,
+                           val turnCount: Int,
+                           override val linearId: UniqueIdentifier = UniqueIdentifier()): LinearState {
 
     override val participants: List<AbstractParty> = players
 
@@ -31,7 +30,7 @@ data class GameState(val players: List<AbstractParty>,
     fun getCurrentPlayerParty(): AbstractParty { return players[turnCount % players.size]}
 
     // Returns a copy of a BoardState object after a move at Pair<x,y>
-    fun returnNewBoardAfterMove(pos: List<Pair<Int,Int>>, boardBeingAttacked:Board): GameState {
+    fun returnNewBoardAfterMove(pos: List<Pair<Int,Int>>, boardBeingAttacked:Board): PublicGameState {
 
         // Check if the index is valid
         if (!BoardUtils.checkIfValidPositions(pos))

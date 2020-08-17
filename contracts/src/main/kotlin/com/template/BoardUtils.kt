@@ -1,6 +1,6 @@
 package com.cordships
 
-import com.cordships.states.GameState
+import com.cordships.states.PublicGameState
 import net.corda.core.contracts.UniqueIdentifier
 
 typealias Board = MutableList<MutableList<Int>>
@@ -22,11 +22,11 @@ class BoardUtils {
             return true;
         }
 
-        fun isGameOver(gameState: GameState): Boolean {
+        fun isGameOver(gameState: PublicGameState): Boolean {
             return false
         }
 
-        fun getWinner(gameState: GameState): UniqueIdentifier? {
+        fun getWinner(gameState: PublicGameState): UniqueIdentifier? {
             return null
         }
     }
