@@ -7,6 +7,8 @@ import net.corda.core.transactions.LedgerTransaction
 // ************
 // * Contract *
 // ************
+
+/** This contract governs the evolution of the global, public game state contract for a given group of players */
 class PublicGameContract : Contract {
 
     companion object {
