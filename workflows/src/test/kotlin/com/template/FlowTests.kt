@@ -1,6 +1,9 @@
 package com.template
 
+import com.template.flows.AttackFlow
 import com.template.flows.Responder
+import net.corda.core.utilities.getOrThrow
+import net.corda.testing.core.singleIdentity
 import net.corda.testing.node.MockNetwork
 import net.corda.testing.node.MockNetworkParameters
 import net.corda.testing.node.TestCordapp
@@ -30,6 +33,11 @@ class FlowTests {
 
     @Test
     fun `dummy test`() {
+        val flow = AttackFlow.Initiator(1, 1, b.info.singleIdentity())
+        val future = a.startFlow(flow)
+        network.runNetwork()
 
+        val signedTx = future.getOrThrow()
+        signedTx.verifySignaturesExcept(b.info.singleIdentity().owningKey)
     }
 }
