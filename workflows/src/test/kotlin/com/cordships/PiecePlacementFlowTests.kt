@@ -8,7 +8,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 
-class PricePlacementFlowTests {
+class PiecePlacementFlowTests {
     private val network = MockNetwork(MockNetworkParameters(cordappsForAllNodes = listOf(
             TestCordapp.findCordapp("com.template.contracts"),
             TestCordapp.findCordapp("com.template.flows")
