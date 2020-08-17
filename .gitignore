@@ -79,7 +79,7 @@ lib
 #WEB APP IGNORES
 
 # dependencies
-/node_modules
+node_modules/
 /.pnp
 .pnp.js
 
