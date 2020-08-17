@@ -1,8 +1,8 @@
 package com.cordships.flows
 
 import co.paralleluniverse.fibers.Suspendable
+import com.cordships.contracts.PrivateGameContract
 import com.cordships.states.PrivateGameState
-import com.template.contracts.PrivateGameContract
 import net.corda.core.flows.FinalityFlow
 import net.corda.core.flows.FlowLogic
 import net.corda.core.flows.InitiatingFlow
