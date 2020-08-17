@@ -21,26 +21,24 @@ enum class GameStatus {
 @CordaSerializable
 data class GameState(val players: List<AbstractParty>,
                      val boards: List<Board>,
-                     val currentPlayer: Party,
                      val status: GameStatus = GameStatus.GAME_IN_PROGRESS,
+                     val turnCount: Int,
                      override val linearId: UniqueIdentifier = UniqueIdentifier()): LinearState {
 
     override val participants: List<AbstractParty> = players
 
-    private fun Array<CharArray>.copy() = Array(size) { get(it).clone() }
-
     // Returns the party of the current player
-    fun getCurrentPlayerParty(): Party { return currentPlayer }
+    fun getCurrentPlayerParty(): AbstractParty { return players[turnCount % players.size]}
 
     // Returns a copy of a BoardState object after a move at Pair<x,y>
     fun returnNewBoardAfterMove(pos: List<Pair<Int,Int>>, boardBeingAttacked:Board): GameState {
 
         // Check if the index is valid
-        if (false) throw IllegalStateException("Invalid board index.")
+        if (!BoardUtils.checkIfValidPositions(pos))
+            throw IllegalStateException("Invalid board index.")
 
-        // Update who's turn it is
         // Create a new game state
-        val newGameState = this
+        val newGameState = this.copy(turnCount = turnCount + 1)
 
         if (BoardUtils.isGameOver(newGameState))
             return newGameState.copy(status = GameStatus.GAME_OVER)
