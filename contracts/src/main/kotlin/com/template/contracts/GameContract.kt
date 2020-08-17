@@ -33,6 +33,7 @@ class GameContract : Contract {
 
     interface Commands : CommandData {
         class StartGame : Commands
+        class AddGamePiece : Commands
         class SubmitTurn : Commands
         class EndGame : Commands
     }
@@ -65,17 +66,17 @@ class GameContract : Contract {
     }
 
     class Board {
-        val board: List<List<Int>> = listOf(
-                listOf(0,0,0,0,0,0,0,0,0,0),
-                listOf(0,0,0,0,0,0,0,0,0,0),
-                listOf(0,0,0,0,0,0,0,0,0,0),
-                listOf(0,0,0,0,0,0,0,0,0,0),
-                listOf(0,0,0,0,0,0,0,0,0,0),
-                listOf(0,0,0,0,0,0,0,0,0,0),
-                listOf(0,0,0,0,0,0,0,0,0,0),
-                listOf(0,0,0,0,0,0,0,0,0,0),
-                listOf(0,0,0,0,0,0,0,0,0,0),
-                listOf(0,0,0,0,0,0,0,0,0,0)
+        val board: List<MutableList<Int>> = listOf(
+                mutableListOf(0,0,0,0,0,0,0,0,0,0),
+                mutableListOf(0,0,0,0,0,0,0,0,0,0),
+                mutableListOf(0,0,0,0,0,0,0,0,0,0),
+                mutableListOf(0,0,0,0,0,0,0,0,0,0),
+                mutableListOf(0,0,0,0,0,0,0,0,0,0),
+                mutableListOf(0,0,0,0,0,0,0,0,0,0),
+                mutableListOf(0,0,0,0,0,0,0,0,0,0),
+                mutableListOf(0,0,0,0,0,0,0,0,0,0),
+                mutableListOf(0,0,0,0,0,0,0,0,0,0),
+                mutableListOf(0,0,0,0,0,0,0,0,0,0)
         )
     }
 }
