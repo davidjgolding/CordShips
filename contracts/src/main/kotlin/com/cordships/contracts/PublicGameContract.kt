@@ -41,6 +41,6 @@ class PublicGameContract : Contract {
                 val attacker: Party,
                 val adversary: Party,
                 var isHit: Boolean
-        )
+        ): Commands
     }
 }

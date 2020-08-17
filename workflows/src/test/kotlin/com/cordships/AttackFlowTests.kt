@@ -1,7 +1,6 @@
 package com.cordships
 
 import com.cordships.flows.AttackFlow
-import com.template.flows.Responder
 import net.corda.core.utilities.getOrThrow
 import net.corda.testing.core.singleIdentity
 import net.corda.testing.node.MockNetwork
@@ -18,12 +17,6 @@ class AttackFlowTests {
     )))
     private val a = network.createNode()
     private val b = network.createNode()
-
-    init {
-        listOf(a, b).forEach {
-            it.registerInitiatedFlow(Responder::class.java)
-        }
-    }
 
     @Before
     fun setup() = network.runNetwork()
