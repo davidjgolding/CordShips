@@ -1,7 +1,7 @@
-package com.template.states
+package com.cordships.states
 
-import com.template.contracts.GameContract
-import com.template.contracts.TemplateContract
+import com.cordships.Board
+import com.template.contracts.PlayerContract
 import net.corda.core.contracts.BelongsToContract
 import net.corda.core.contracts.ContractState
 import net.corda.core.identity.AbstractParty
@@ -9,5 +9,5 @@ import net.corda.core.identity.AbstractParty
 // *********
 // * State *
 // *********
-@BelongsToContract(TemplateContract::class)
-data class PlayerState(val board: GameContract.Board, override val participants: List<AbstractParty> = listOf()) : ContractState
+@BelongsToContract(PlayerContract::class)
+data class PlayerState(val board: Board, override val participants: List<AbstractParty> = listOf()) : ContractState

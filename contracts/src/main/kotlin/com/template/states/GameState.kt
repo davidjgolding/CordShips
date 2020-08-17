@@ -1,9 +1,10 @@
-package com.template.states
+package com.cordships.states
 
-import com.template.contracts.GameContract
+import com.cordships.Board
+import com.cordships.BoardUtils
+import com.cordships.contracts.GameContract
 import net.corda.core.contracts.*
 import net.corda.core.identity.AbstractParty
-import net.corda.core.identity.AnonymousParty
 import net.corda.core.identity.Party
 import net.corda.core.serialization.CordaSerializable
 
@@ -19,7 +20,7 @@ enum class GameStatus {
 @BelongsToContract(GameContract::class)
 @CordaSerializable
 data class GameState(val players: List<AbstractParty>,
-                     val boards: List<GameContract.Board>,
+                     val boards: List<Board>,
                      val currentPlayer: Party,
                      val status: GameStatus = GameStatus.GAME_IN_PROGRESS,
                      override val linearId: UniqueIdentifier = UniqueIdentifier()): LinearState {
@@ -32,7 +33,7 @@ data class GameState(val players: List<AbstractParty>,
     fun getCurrentPlayerParty(): Party { return currentPlayer }
 
     // Returns a copy of a BoardState object after a move at Pair<x,y>
-    fun returnNewBoardAfterMove(pos: List<Pair<Int,Int>>, boardBeingAttacked:GameContract.Board): GameState {
+    fun returnNewBoardAfterMove(pos: List<Pair<Int,Int>>, boardBeingAttacked:Board): GameState {
 
         // Check if the index is valid
         if (false) throw IllegalStateException("Invalid board index.")
@@ -41,7 +42,7 @@ data class GameState(val players: List<AbstractParty>,
         // Create a new game state
         val newGameState = this
 
-        if (GameContract.BoardUtils.isGameOver(newGameState))
+        if (BoardUtils.isGameOver(newGameState))
             return newGameState.copy(status = GameStatus.GAME_OVER)
 
         return newGameState

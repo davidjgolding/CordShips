@@ -1,6 +1,6 @@
 package com.template.contracts
 
-import com.template.states.PlayerState
+import com.cordships.states.PlayerState
 import net.corda.core.contracts.CommandData
 import net.corda.core.contracts.Contract
 import net.corda.core.contracts.requireSingleCommand
@@ -12,7 +12,7 @@ import net.corda.core.transactions.LedgerTransaction
 // ************
 class PlayerContract : Contract {
     companion object {
-        const val ID = "com.template.contracts.PlayerContract"
+        const val ID = "com.cordships.contracts.playercontract"
     }
 
     override fun verify(tx: LedgerTransaction) {
