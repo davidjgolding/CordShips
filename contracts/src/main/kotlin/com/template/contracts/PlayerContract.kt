@@ -26,9 +26,6 @@ class PlayerContract : Contract {
                 "There should be no input state." using (tx.inputs.isEmpty())
                 "There should be one output state." using (tx.outputs.size == 1)
                 "The output state should be of type BoardState." using (tx.outputs[0].data is PlayerState)
-
-                val outputPlayerState = tx.outputStates[0] as PlayerState
-                "The battle ship placement is not valid." using (GameContract.BoardUtils.checkIfValidPositions(outputPlayerState.battleShipPositions))
             }
         }
     }
