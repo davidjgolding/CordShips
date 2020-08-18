@@ -1,4 +1,4 @@
-package com.template.webserver
+package com.cordships.webserver
 
 import com.google.common.reflect.TypeToken
 import net.corda.client.rpc.CordaRPCClient
