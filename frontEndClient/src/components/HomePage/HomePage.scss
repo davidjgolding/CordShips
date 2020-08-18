@@ -5,13 +5,18 @@
     background-color: white;
     text-align: center;
     font-size: 30px;
-    box-shadow: 0 0 4px 3px rgba(0,0,0,.16);
+    box-shadow: 0 0 20px 3px rgba(0, 0, 0, 0.76);
     display: flex;
 }
 
 .appTitle{
     margin: auto;
     padding-right: 60px;
+}
+
+.appTitle::after {
+    content: attr(data-end);
+    color:red;
 }
 
 .playerBoardWrapper{
@@ -28,9 +33,10 @@
     text-align: center;
     font-size: 30px;
     height: 80px;
-    box-shadow: 0 0 4px 3px rgba(0,0,0,.16);
+    box-shadow: 0 0 20px 3px rgba(0, 0, 0, 0.76);
     padding-top: 30px;
     margin-top: 50px;
+    background-color: white;
 }
 
 .indicatorWrapper{
@@ -45,27 +51,30 @@
 }
 
 .aliveKey{
-    background-color: green;
+    background-color: #5B6B88;
 }
 
 .missedKey{
-    background-color: yellow;
+    background-color: #DDCCEF;
 }
 
 .selectedKey{
-    background-color: purple;
+    background-color: #7DBAEF;
 }
 
 .colorKey{
     margin: auto;
     width: 150px;
     text-align: center;
+    font-size: 25px;
+    padding:10px;
     box-shadow: 0 0 4px 3px rgba(0,0,0,.36);
+    color: black;
     border-radius: 5%;
 }
 
 .hitKey{
-    background-color: red;
+    background-color: #CC4A4B;
 }
 
 
@@ -73,6 +82,7 @@
     text-align: center;
     font-size: 30px;
     margin-top: 15px;
+    color: white;
 }
 
 .cordaLogo{
@@ -81,3 +91,8 @@
     margin-top: 16px;
     padding-left: 20px;
 }
+
+.homeWrapper{
+    background-color: #53585F;
+}
+

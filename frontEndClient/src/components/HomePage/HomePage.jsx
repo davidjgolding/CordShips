@@ -90,7 +90,7 @@ function HomePage(props){
         <div className="homeWrapper">
             <div className="navHeader">
                 <img className="cordaLogo" src={logo}></img>
-                 <div className="appTitle">{userName}  You are playing CordShips! </div>
+                 <div className="appTitle" data-end=".">{userName}  You are playing CordShips</div>
             </div>
             
             <div className="playerGameStateTitle"> 
