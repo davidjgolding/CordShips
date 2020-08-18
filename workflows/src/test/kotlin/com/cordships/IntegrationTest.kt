@@ -151,8 +151,9 @@ class IntegrationTest: AbstractTestClass() {
 
             if(game.isGameOver())
             {
-                assertEquals(expectedTurnCount, game.turnCount)
                 println("GAME IS OVER in $expectedTurnCount turns, the winner is: ${game.getWinner()}")
+                assertEquals(expectedTurnCount, game.turnCount)
+                assertNotNull(game.getWinner())
                 break
             }
 
