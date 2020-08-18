@@ -54,10 +54,9 @@ object AttackFlow {
                 playedGameState = playedGameState.updateBoardWithAttack(it.coordinates, it.adversary, it.hitOrMiss)
             }
 
-            val publicKeys = outcomes.map { it.adversary.owningKey }.toMutableList()
-            publicKeys.add(me.owningKey)
+            val publicKeys = gameState.participants.map { it.owningKey }.toMutableList()
 
-            val notary = serviceHub.networkMapCache.notaryIdentities.single()
+            val notary = serviceHub.defaultNotary()
             val txCommand = Command(PublicGameContract.Commands.Attack(outcomes, me), publicKeys)
             val txBuilder = TransactionBuilder(notary)
                     .addInputState(gameStateAndRef)
@@ -68,8 +67,8 @@ object AttackFlow {
 
             val partSignedTx = serviceHub.signInitialTransaction(txBuilder)
 
-            val otherPartySessions = outcomes.map {
-                initiateFlow(it.adversary)
+            val otherPartySessions = gameState.participants.filter { it != me }.map {
+                initiateFlow(it)
             }.toSet()
 
             val fullySignedTx = subFlow(CollectSignaturesFlow(partSignedTx, otherPartySessions))
