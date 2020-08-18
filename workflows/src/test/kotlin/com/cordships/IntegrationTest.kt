@@ -1,10 +1,9 @@
 package com.cordships
 
-import com.cordships.flows.IssuePublicGameFlow
-import com.cordships.flows.PiecePlacementFlow
-import com.cordships.flows.StartGameFlow
+import com.cordships.flows.*
 import com.cordships.states.GameStatus
 import net.corda.core.utilities.getOrThrow
+import net.corda.testing.core.singleIdentity
 import net.corda.testing.node.StartedMockNode
 import org.junit.Test
 import kotlin.test.assertEquals
@@ -25,7 +24,12 @@ class IntegrationTest: AbstractTestClass() {
         }
 
         // Start the game
-        val startedGame = a.startFlow(StartGameFlow(publicGame.linearId)).getOrThrow()
+        var startedGame = a.startFlow(StartGameFlow(publicGame.linearId)).getOrThrow()
+        assertEquals(startedGame.status, GameStatus.GAME_IN_PROGRESS)
+
+        val attackFlow = AttackFlow.Initiator(listOf(Shot(Pair(1, 1), b.info.singleIdentity())), publicGame.linearId)
+        startedGame = a.startFlow(attackFlow).getOrThrow()
+
         assertEquals(startedGame.status, GameStatus.GAME_IN_PROGRESS)
     }
 }

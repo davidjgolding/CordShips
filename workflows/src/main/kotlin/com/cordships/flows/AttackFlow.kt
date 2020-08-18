@@ -2,68 +2,81 @@ package com.cordships.flows
 
 import co.paralleluniverse.fibers.Suspendable
 import com.cordships.contracts.PublicGameContract
+import com.cordships.states.HitOrMiss
 import com.cordships.states.PublicGameState
-import net.corda.core.contracts.*
+import net.corda.core.contracts.Command
+import net.corda.core.contracts.UniqueIdentifier
+import net.corda.core.contracts.requireThat
 import net.corda.core.flows.*
 import net.corda.core.identity.Party
-import net.corda.core.node.services.Vault
-import net.corda.core.node.services.vault.QueryCriteria
+import net.corda.core.serialization.CordaSerializable
 import net.corda.core.transactions.SignedTransaction
 import net.corda.core.transactions.TransactionBuilder
 import java.security.InvalidParameterException
-import kotlin.reflect.KClass
+
+
+@CordaSerializable
+data class Shot(
+        val coordinates: Pair<Int, Int>,
+        val adversary: Party
+)
 
 object AttackFlow {
     @InitiatingFlow
     @StartableByRPC
-    class Initiator(
-            val x: Int,
-            val y: Int,
-            val gameId: String,
-            val adversary: Party
-    ) : FlowLogic<SignedTransaction>() {
+    class Initiator(val shots: List<Shot>, val gameStateId: UniqueIdentifier) : FlowLogic<PublicGameState>() {
         @Suspendable
-        override fun call(): SignedTransaction {
+        override fun call(): PublicGameState {
+
+            if (shots.isEmpty()) {
+                throw InvalidParameterException("Please define the shots for the attach.")
+            }
 
             val me = serviceHub.myInfo.legalIdentities.first()
 
-            val gameStateAndRef = loadInput(PublicGameState::class, UniqueIdentifier.fromString(gameId))
+            val gameStateAndRef = serviceHub.loadPublicGameState(gameStateId)
             val gameState = gameStateAndRef.state.data
 
-            // get the move number from the game state
-            val outcome = subFlow(HitQueryFlow.Initiator(adversary, x, y, 0, gameId))
-                    ?: throw InvalidParameterException("The answer was already requested once")
+            if (gameState.getCurrentPlayerParty() != me) {
+                throw InvalidParameterException("It's not my turn to play.")
+            }
 
-            // modify the game state with the outcome, next player, next move, etc.
+            val outcomes = shots.map {
+                val hitOrMiss = subFlow(HitQueryFlow.Initiator(it.adversary, it.coordinates, gameState.turnCount, gameStateId))
+                if (hitOrMiss == HitOrMiss.UNKNOWN) {
+                    throw InvalidParameterException("The answer was already requested once.")
+                }
+                PublicGameContract.Commands.Shot(it.coordinates, it.adversary, hitOrMiss)
+            }
+
+            var playedGameState = gameState.endTurn()
+            outcomes.forEach {
+                playedGameState = playedGameState.updateBoardWithAttack(it.coordinates, it.adversary, it.hitOrMiss)
+            }
+
+            val publicKeys = outcomes.map { it.adversary.owningKey }.toMutableList()
+            publicKeys.add(me.owningKey)
 
             val notary = serviceHub.networkMapCache.notaryIdentities.single()
-
-            val txCommand = Command(PublicGameContract.Commands.Attack(
-                    x,
-                    y,
-                    me,
-                    adversary,
-                    outcome
-            ), listOf(me.owningKey, adversary.owningKey))
+            val txCommand = Command(PublicGameContract.Commands.Attack(outcomes, me), publicKeys)
             val txBuilder = TransactionBuilder(notary)
                     .addInputState(gameStateAndRef)
-                    .addOutputState(gameState, PublicGameContract.ID)
+                    .addOutputState(playedGameState, PublicGameContract.ID)
                     .addCommand(txCommand)
 
             txBuilder.verify(serviceHub)
 
             val partSignedTx = serviceHub.signInitialTransaction(txBuilder)
 
-            val otherPartySession = initiateFlow(adversary)
+            val otherPartySessions = outcomes.map {
+                initiateFlow(it.adversary)
+            }.toSet()
 
-            val fullySignedTx = subFlow(CollectSignaturesFlow(partSignedTx, setOf(otherPartySession)))
+            val fullySignedTx = subFlow(CollectSignaturesFlow(partSignedTx, otherPartySessions))
 
-            return subFlow(FinalityFlow(fullySignedTx, setOf(otherPartySession)))
-        }
+            val tx = subFlow(FinalityFlow(fullySignedTx, otherPartySessions))
 
-        private fun <T: ContractState> loadInput(type: KClass<out T>, identifier: UniqueIdentifier): StateAndRef<T> {
-            val criteria = QueryCriteria.LinearStateQueryCriteria(linearId = listOf(identifier), status= Vault.StateStatus.UNCONSUMED)
-            return serviceHub.vaultService.queryBy(type.java, criteria).states.single()
+            return tx.coreTransaction.outputsOfType<PublicGameState>().single()
         }
     }
 
@@ -76,6 +89,7 @@ object AttackFlow {
                     val output = stx.tx.outputs.single().data
                 }
             }
+
             val txId = subFlow(signTransactionFlow).id
 
             subFlow(ReceiveFinalityFlow(otherPartySession, expectedTxId = txId))
