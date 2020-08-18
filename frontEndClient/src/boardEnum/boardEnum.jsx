@@ -1,0 +1,1 @@
+export const BoardEnum = Object.freeze({"Empty":1, "Ship":2, "Miss":3, "Hit":4})
