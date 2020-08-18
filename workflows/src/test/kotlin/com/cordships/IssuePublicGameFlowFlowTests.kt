@@ -16,9 +16,6 @@ class IssuePublicGameFlowFlowTests: AbstractTestClass() {
     private val aIdentity = a.info.legalIdentities.first()
     private val bIdentity = b.info.legalIdentities.first()
 
-    @Before
-    fun setup() = network.runNetwork()
-
     @After
     fun tearDown() = network.stopNodes()
 
