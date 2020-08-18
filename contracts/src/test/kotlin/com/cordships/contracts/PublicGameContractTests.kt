@@ -4,17 +4,16 @@ import com.cordships.contracts.PublicGameContract.Commands.*
 import com.cordships.contracts.PublicGameContract.Companion.ID
 import com.cordships.states.GameStatus
 import com.cordships.states.HitOrMiss
-import com.cordships.states.PrivateGameState
 import com.cordships.states.PublicGameState
-import net.corda.core.contracts.ContractState
-import net.corda.core.contracts.UniqueIdentifier
 import net.corda.core.identity.CordaX500Name
 import net.corda.testing.core.TestIdentity
-import net.corda.testing.internal.vault.VaultFiller
 import net.corda.testing.node.MockServices
 import net.corda.testing.node.ledger
 import org.junit.Test
-import kotlin.test.*
+import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 class PublicGameContractTests {
     private val ledgerServices = MockServices(listOf("com.cordships.contracts"))
@@ -61,7 +60,7 @@ class PublicGameContractTests {
             transaction("StartGame") {
                 input(unstartedGameStateAndRef.ref)
                 command(partyA.publicKey, StartGame())
-                output(ID, "startedGame", unstartedGameStateAndRef.state.data.copy(status = GameStatus.GAME_IN_PROGRESS))
+                output(ID, "startedGame", unstartedGameStateAndRef.state.data.copy(status = GameStatus.GAME_IN_PROGRESS, playerProofs = emptyMap()))
                 tweak {
                     output(ID, unstartedGameStateAndRef.state.data.copy())
                     fails()
@@ -90,7 +89,7 @@ class PublicGameContractTests {
             transaction("StartGame") {
                 input(unstartedGameStateAndRef.ref)
                 command(partyA.publicKey, StartGame())
-                output(ID, "startedGame", unstartedGameStateAndRef.state.data.copy(status = GameStatus.GAME_IN_PROGRESS))
+                output(ID, "startedGame", unstartedGameStateAndRef.state.data.copy(status = GameStatus.GAME_IN_PROGRESS, playerProofs = emptyMap()))
                 verifies()
             }
 
@@ -99,7 +98,7 @@ class PublicGameContractTests {
 
             transaction {
                 input(startedGameStateAndRef.ref)
-                output(ID, "attackResponse", startedGameStateAndRef.state.data)
+                output(ID, "attackResponse", startedGameStateAndRef.state.data.copy(turnCount = 1))
                 command(partyA.publicKey, Attack(listOf(Shot(Pair(0, 0), partyB.party, HitOrMiss.HIT)), partyA.party))
                 tweak {
                     command(partyA.publicKey, Attack(listOf(Shot(Pair(0, 0), partyA.party, HitOrMiss.HIT)), partyA.party))
