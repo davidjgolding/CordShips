@@ -12,9 +12,7 @@ function EnemyBoards(props){
     const context = useContext(AppContext)
     let enemyBoards = []
     const [update, setUpdate] = useState(0)
-
-    console.log(context.selected)
-    console.log(update)
+    
     //quick fix to avoid rendering errors
     if (props.enemyStates.length > 0) {
         for (let i = 0; i < props.enemyStates.length; i++) {

@@ -9,16 +9,7 @@ function InteractiveEnemyBoard(props){
 
     const context = useContext(AppContext)
     const [update, setUpdate] = useState(0)
-
-    console.log(context.selected)
-
     const setSelected = (event) => {
-        //modify the context api here add each selected if its not greater than 3
-
-        if(context.selected.length >= SHOT_LIMIT){
-            return
-        }
-
         let idXY = event.target.id.split(",")
 
         let newSelectedItem = {
@@ -27,7 +18,23 @@ function InteractiveEnemyBoard(props){
             y: idXY[2]
         }
 
-        const toAdd = [...context.selected, newSelectedItem]
+        let alreadySelected = context.selected.filter(
+            point => point.x === idXY[1] && point.y === idXY[2])
+
+        let toAdd; 
+        if (alreadySelected.length === 0) {
+            //modify the context api here add each selected if its not greater than 3
+            if(context.selected.length >= SHOT_LIMIT){
+                return
+            }
+            toAdd = [...context.selected, newSelectedItem]
+        } else {
+            let newSelected = context.selected.map(obj => Object.assign({}, obj))
+            let index = context.selected.indexOf(alreadySelected[0]);
+            if(index !== -1) { newSelected.splice(index, 1) }
+            toAdd = newSelected
+            console.log(newSelected)
+        }
 
         context.setAppState(toAdd)
         setUpdate(update => update + 1)
