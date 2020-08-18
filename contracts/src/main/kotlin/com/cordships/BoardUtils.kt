@@ -1,8 +1,6 @@
 package com.cordships
 
 import com.cordships.states.HitOrMiss
-import com.cordships.states.PublicGameState
-import net.corda.core.contracts.UniqueIdentifier
 
 typealias Board = Array<Array<HitOrMiss>>
 

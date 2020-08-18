@@ -1,10 +1,10 @@
 package com.cordships.states
 
 import com.cordships.contracts.PrivateGameContract
-import net.corda.core.contracts.BelongsToContract
-import net.corda.core.contracts.ContractState
-import net.corda.core.contracts.requireThat
+import net.corda.core.contracts.*
 import net.corda.core.identity.AbstractParty
+import net.corda.core.identity.Party
+import org.checkerframework.common.aliasing.qual.Unique
 
 /**
  * This class represents a players private view of the pieces they've placed on the board. Players
@@ -17,15 +17,17 @@ import net.corda.core.identity.AbstractParty
 @BelongsToContract(PrivateGameContract::class)
 data class PrivateGameState(
         val board: List<Ship>,
-        override val participants: List<AbstractParty> = listOf()
-) : ContractState {
+        val owner: Party,
+        val associatedPublicGameState: UniqueIdentifier,
+        override val linearId: UniqueIdentifier = UniqueIdentifier()
+) : LinearState {
     init {
         requireThat {
-            "All ships are accounted for with not duplicates" using (board.toSet().size == 5)
+            "All ships are accounted for with not duplicates" using (board.toSet().size == 7)
             "All ships are appropriately names" using (board.all { safeValueOf<Ship.ShipSize>(it.vesselClass) != null })
         }
-
     }
+    override val participants: List<AbstractParty> = listOf(owner)
 }
 
 /** A utility function to retrieve a safe value from an enum */

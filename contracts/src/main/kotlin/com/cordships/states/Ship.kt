@@ -1,12 +1,18 @@
 package com.cordships.states
 
+import net.corda.core.serialization.CordaSerializable
+
 /**
  * A ship representing the placement of a ship piece on a private game board state
  *
  * @param descriptor The direction in which the boat is facing
  * @param shipSize The length of the ship
  */
-class Ship(descriptor: String, shipSize: ShipSize) {
+@CordaSerializable
+class Ship(
+    val descriptor: String,
+    val shipSize: ShipSize
+) {
 
     /** A list of coordinates representing how a ship has been placed */
     lateinit var coordinates: List<Pair<Int, Int>>
@@ -59,6 +65,7 @@ class Ship(descriptor: String, shipSize: ShipSize) {
     }
 
     /** A class which encapsulates all ships with various sizes */
+    @CordaSerializable
     enum class ShipSize(val length: Int) {
         AirCraftCarrier(5),
         BattleShip(4),
