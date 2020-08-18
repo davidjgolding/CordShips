@@ -1,10 +1,12 @@
 package com.cordships.webserver
 
+import com.cordships.flows.IssuePublicGameFlow
 import com.google.common.reflect.TypeToken
 import net.corda.client.rpc.CordaRPCClient
 import net.corda.core.utilities.NetworkHostAndPort
 import org.slf4j.LoggerFactory
 import com.google.gson.Gson
+import net.corda.core.messaging.startFlow
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -37,6 +39,22 @@ class Controller(rpc: NodeRPCConnection) {
             "playerE" to MutableList(n) { MutableList(n) { 1 } },
             "playerF" to MutableList(n) { MutableList(n) { 1 } })
 
+    @CrossOrigin
+    @PostMapping(value = ["/start"], produces = ["text/json"])
+    private fun start(@RequestParam(value = "playerIDs") sPlayerIDs: String): ResponseEntity<String> {
+        val gson = Gson()
+        return try {
+            val playersLst = gson.fromJson<List<String>>(sPlayerIDs, List :: class.java)
+            val parties = playersLst.map { proxy.partiesFromName(it, true).first() }
+            val x = proxy.startFlow(::IssuePublicGameFlow, parties)
+            logger.info(x.id.toString())
+            ResponseEntity("OK", HttpStatus.OK)
+        } catch (ex: NoSuchElementException) {
+            ResponseEntity("One of the players is invalid.", HttpStatus.NOT_FOUND)
+        }
+    }
+
+    @CrossOrigin
     @GetMapping(value = ["/connect"], produces = ["text/json"])
     private fun connect(): ResponseEntity<String> {
         return if (players != null) {
@@ -48,6 +66,20 @@ class Controller(rpc: NodeRPCConnection) {
         }
     }
 
+    @CrossOrigin
+    @GetMapping(value = ["/id"], produces = ["text/json"])
+    private fun id(): ResponseEntity<String> {
+        val id: String? = proxy.nodeInfo().legalIdentities.first().name.organisation
+        return if (id != null) {
+            val gson = Gson()
+            val response = mapOf("playerID" to id)
+            ResponseEntity(gson.toJson(response), HttpStatus.OK)
+        } else {
+            ResponseEntity("Node name not found.", HttpStatus.NOT_FOUND)
+        }
+    }
+
+    @CrossOrigin
     @PostMapping(value = ["/grid"], produces = ["text/json"])
     private fun setGrid(@RequestParam(value = "grid") sGrid: String): ResponseEntity<String> {
         val gson = Gson()
@@ -64,6 +96,7 @@ class Controller(rpc: NodeRPCConnection) {
         }
     }
 
+    @CrossOrigin
     @GetMapping(value = ["/grid"], produces = ["text/json"])
     private fun getGrid(@RequestParam(value = "playerID") playerID: String): ResponseEntity<String> {
         val gson = Gson()
@@ -77,6 +110,7 @@ class Controller(rpc: NodeRPCConnection) {
         }
     }
 
+    @CrossOrigin
     @PostMapping(value = ["/shoot"], produces = ["text/json"])
     private fun shoot(@RequestParam(value = "playerID") playerID: String,
                       @RequestParam(value = "x") x: Int,
@@ -89,7 +123,7 @@ class Controller(rpc: NodeRPCConnection) {
             return ResponseEntity("You can't shoot yourself.", HttpStatus.BAD_REQUEST)
         // ensure coordinates are valid
         if (x !in 0..10 || y !in 0..10)
-            return ResponseEntity("Coordinates are invalid.", HttpStatus.NOT_FOUND)
+            return ResponseEntity("Coordinates are invalid.", HttpStatus.BAD_REQUEST)
         // ToDo: Lookup and set
         grids[playerID]!![x][y] = 3
         return ResponseEntity("Shot fired.", HttpStatus.OK)
