@@ -13,7 +13,7 @@
 }
 
 .shipBoardItem {
-    background-color: #7DBAEF;
+    background-color: green;
 }
 
 .emptyBoardItem {
@@ -21,9 +21,21 @@
 }
 
 .hitBoardItem {
-    background-color: #CC4A4B;
+    background-color: red;
 }
 
 .missBoardItem {
-    background-color: #DDCCEF;
+    background-color: yellow;
+}
+
+.interactiveGridElement{
+
+}
+
+.interactiveGridElement:hover{
+    background-color: #98A1D1;
+}
+
+.selectedGridElement{
+    background-color: #7DBAEF;
 }

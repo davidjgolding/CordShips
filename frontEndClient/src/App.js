@@ -3,15 +3,21 @@ import logo from './logo.svg';
 import './App.css';
 import GameBoard from './components/GameBoard/GameBoard';
 import HomePage from './components/HomePage/HomePage';
+import { AppProvider } from './context/AppContext';
 
-export const BoardEnum = Object.freeze({"Empty":1, "Ship":2, "Miss":3, "Hit":4})
+export const SHOT_LIMIT = 3;
+export const POLLING_INTERVAL = 100 * 20;
+export const USER_HOST = "http://localhost:10050/";
+export const USER_ID = "playerA";
 
 function App() {
 
   return (
-    <div>
-      <HomePage></HomePage>
-    </div>
+    <AppProvider>
+      <div>
+        <HomePage></HomePage>
+      </div>
+    </AppProvider>
   )
 }
 

@@ -1,13 +1,31 @@
 .enemyBoardsContainer{
     display: flex;
+    flex-wrap: wrap;
 }
 
 .enemyBoardWrapper{
-    margin:20px;
+    margin:auto;
     text-align: center;
 }
 
 .enemyTitle{
     margin-bottom: 10px;
-    font-size: 20px;
+    font-size: 30px;
+    color: white;
+}
+
+.endTurnButtonWrapper{
+    width: auto;
+    text-align: center;
+    margin-top: 50px;
+}
+
+.endButton{
+    width: auto;
+    height: 50px;
+    box-shadow: 0 0 4px 3px rgba(0,0,0,.56);
+    font-size: 25px;
+    margin-bottom: 25px;
+    background-color: #968BA2;
+    border-radius: 5px;
 }
