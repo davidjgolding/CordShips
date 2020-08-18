@@ -70,7 +70,10 @@ class PublicGameContract : Contract {
                 var outputPublicGameState = output as PublicGameState
                 "New game status must be GAME_IN_PROGRESS or GAME_OVER." using (outputPublicGameState.status != GameStatus.GAME_NOT_STARTED)
                 "Turn Count should be not be zero." using (outputPublicGameState.turnCount > 0)
-                "New game state must increment the turn count by 1." using (inputPublicGameState.turnCount + 1 == outputPublicGameState.turnCount)
+
+                "New game state must increment the turn count by 1 if still in progress." using
+                        (outputPublicGameState.isGameOver() || (inputPublicGameState.turnCount + 1 == outputPublicGameState.turnCount))
+
                 "Player proofs must remain the same." using (inputPublicGameState.playerProofs == outputPublicGameState.playerProofs)
 
                 var attack = command.value as Commands.Attack
