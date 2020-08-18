@@ -177,8 +177,8 @@ class IntegrationTest: AbstractTestClass() {
         // Issue all private boards
         val privateGameStates = testNodes.map {
             it.startFlow(PiecePlacementFlow(publicGame.linearId,
-                    "A0S", "B0S", "C0S",
-                    "D0S", "E0S", "F0S", "G0S")).getOrThrow()
+                    listOf("A0S", "B0S", "C0S",
+                    "D0S", "E0S", "F0S", "G0S"))).getOrThrow()
         }
 
         // Start the game
