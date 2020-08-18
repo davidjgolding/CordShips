@@ -1,10 +1,7 @@
 package com.cordships
 
 import com.cordships.flows.*
-import com.cordships.states.GameStatus
-import com.cordships.states.HitOrMiss
-import com.cordships.states.PrivateGameState
-import com.cordships.states.PublicGameState
+import com.cordships.states.*
 import net.corda.core.contracts.UniqueIdentifier
 import net.corda.core.identity.AbstractParty
 import net.corda.core.identity.Party
@@ -147,7 +144,7 @@ class IntegrationTest: AbstractTestClass() {
             }
 
             if(shots.isEmpty()) {
-                fail("The game mus be over before we run out of shots")
+                fail("The game must be over before we run out of shots")
             }
 
             game = attacker.play(data.first.linearId, *shots.toTypedArray())
@@ -155,8 +152,13 @@ class IntegrationTest: AbstractTestClass() {
             if(game.isGameOver())
             {
                 assertEquals(expectedTurnCount, game.turnCount)
-                println("GAME IS OVER in $expectedTurnCount turns, the winner is: ${game.winner()}")
+                println("GAME IS OVER in $expectedTurnCount turns, the winner is: ${game.getWinner()}")
                 break
+            }
+
+            println("AFTER GAME TURN: $expectedTurnCount")
+            game.playerBoards.map { Pair(it.key, it.value.isGameOver()) }.forEach {
+                println("PARTY: ${it.first.name} is the game over ${it.second}")
             }
 
             expectedTurnCount++
@@ -187,6 +189,10 @@ class IntegrationTest: AbstractTestClass() {
     }
 
     private fun StartedMockNode.play(gameId: UniqueIdentifier, vararg shots: Shot): PublicGameState {
+        println("THE SHOOTING PARTY: ${info.singleIdentity().name}")
+        shots.forEach {
+            println("ADVERSARY: ${it.adversary.name}")
+        }
         val attackFlow = AttackFlow.Initiator(shots.toList(), gameId)
         return startFlow(attackFlow).getOrThrow()
     }

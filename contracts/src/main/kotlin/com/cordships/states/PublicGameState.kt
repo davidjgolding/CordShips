@@ -8,6 +8,7 @@ import net.corda.core.contracts.UniqueIdentifier
 import net.corda.core.identity.AbstractParty
 import net.corda.core.identity.Party
 import net.corda.core.serialization.CordaSerializable
+import java.security.InvalidParameterException
 
 /**
  * The global, public state of a given game of CordShips. This state indicated all public information
@@ -48,19 +49,17 @@ data class PublicGameState constructor(val playerBoards: Map<Party, Board>,
     fun startGame(playerProofs: Map<Party, Int>) = copy(playerProofs = playerProofs, status = GameStatus.GAME_IN_PROGRESS)
 
     /** Returns the party representing the player who's turn it is currently */
-    fun getCurrentPlayerParty(): AbstractParty {
-        return sortedParties()[partyTurn]
-    }
+    fun getCurrentPlayerParty(): AbstractParty = sortedParties()[partyTurn]
 
     private fun sortedParties() = playerBoards.keys.sortedBy { it.name.toString() }
 
     /** Returns a copy of the GameBoard with the turn count incremented */
     fun endTurn(): PublicGameState {
-        if(isGameOver()) {
+        if (isGameOver()) {
             return if (status != GameStatus.GAME_OVER) {
                 copy(status = GameStatus.GAME_OVER)
             } else {
-                this
+                throw InvalidParameterException("The Game was already over.")
             }
         }
 
@@ -68,10 +67,10 @@ data class PublicGameState constructor(val playerBoards: Map<Party, Board>,
         var newPartyTurn = partyTurn
         do {
             newPartyTurn++
-            if(newPartyTurn >= playerList.size) {
+            if (newPartyTurn >= playerList.size) {
                 newPartyTurn = 0
             }
-        } while (playerList[partyTurn].isGameOver())
+        } while (playerList[newPartyTurn].isGameOver())
 
         return copy(turnCount = turnCount + 1, partyTurn = newPartyTurn)
     }
@@ -100,16 +99,15 @@ data class PublicGameState constructor(val playerBoards: Map<Party, Board>,
         return copy(playerBoards = mutablePlayerBoards)
     }
 
-    fun winner(): Party? {
-        if(!isGameOver()) {
+    fun getWinner(): Party? {
+        if (!isGameOver()) {
             return null
         }
         return playerBoards.keys.firstOrNull { !it.isGameOver() }
     }
 
-    fun Party.isGameOver(): Boolean {
-        return playerBoards.getValue(this)
-                .sumBy { it.sumBy { c -> if (c == HitOrMiss.HIT) 1 else 0  } } >= 20
+    private fun Party.isGameOver(): Boolean {
+        return playerBoards.getValue(this).isGameOver()
     }
 
     fun isGameOver(): Boolean {
@@ -123,6 +121,10 @@ data class PublicGameState constructor(val playerBoards: Map<Party, Board>,
         if (position.second < 0 || position.second >= 10) return false;
         return true;
     }
+}
+
+fun Board.isGameOver(): Boolean {
+    return sumBy { it.sumBy { c -> if (c == HitOrMiss.HIT) 1 else 0 } } >= 20
 }
 
 /** Represents the outcome of an attach */
