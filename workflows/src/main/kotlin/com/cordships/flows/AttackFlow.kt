@@ -53,6 +53,10 @@ object AttackFlow {
                 throw InvalidParameterException("It's not my turn to play.")
             }
 
+            if(shots.any { it.adversary == me }) {
+                throw InvalidParameterException("You cannot attack yourself.")
+            }
+
             val outcomes = shots.map {
                 val hitOrMiss = subFlow(HitQueryFlow.Initiator(it.adversary, it.coordinates, gameState.turnCount, gameStateId))
                 if (hitOrMiss == HitOrMiss.UNKNOWN) {

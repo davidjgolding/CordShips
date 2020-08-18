@@ -6,14 +6,17 @@ import com.cordships.states.HitOrMiss
 import com.cordships.states.PrivateGameState
 import com.cordships.states.PublicGameState
 import net.corda.core.contracts.UniqueIdentifier
+import net.corda.core.identity.AbstractParty
+import net.corda.core.identity.Party
 import net.corda.core.utilities.getOrThrow
+import net.corda.testing.core.singleIdentity
 import net.corda.testing.node.StartedMockNode
 import org.junit.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
+import java.util.*
+import kotlin.test.*
 
 class IntegrationTest: AbstractTestClass() {
-    @Test
+    @Test(timeout = 30_000)
     fun `happy path able to issue, setup game board correctly and play random two first rounds`() {
 
         val data = startGame()
@@ -61,7 +64,7 @@ class IntegrationTest: AbstractTestClass() {
         assertNotEquals(HitOrMiss.UNKNOWN, game.playerBoards.getValue(partyD)[4][4])
     }
 
-    @Test
+    @Test(timeout = 30_000)
     fun `hitting ships`() {
 
         val data = startGame()
@@ -110,6 +113,59 @@ class IntegrationTest: AbstractTestClass() {
         })
     }
 
+    @Test(timeout = 300_000)
+    fun `playing until completion`() {
+
+        val data = startGame()
+
+        val s = Stack<String>()
+        val ships = mapOf(
+                partyA to data.second.first { it.owner == partyA }.board.flatMap { it.coordinates }.toStack(),
+                partyB to data.second.first { it.owner == partyB }.board.flatMap { it.coordinates }.toStack(),
+                partyC to data.second.first { it.owner == partyC }.board.flatMap { it.coordinates }.toStack(),
+                partyD to data.second.first { it.owner == partyD }.board.flatMap { it.coordinates }.toStack()
+        )
+
+        val attackers = mapOf<AbstractParty, StartedMockNode>(
+                partyA to a,
+                partyB to b,
+                partyC to c,
+                partyD to d
+        )
+        var attacker = a
+        var game: PublicGameState? = null
+        var expectedTurnCount = 0
+        while(true) {
+            val shots = mutableListOf<Shot>()
+            ships.keys.filter { it != attacker.info.singleIdentity() }.forEach {
+                if(shots.size == 3) {
+                    return@forEach
+                }
+                if(!ships.getValue(it).empty()) {
+                    shots.add(Shot(ships.getValue(it).pop(), it))
+                }
+            }
+
+            if(shots.isEmpty()) {
+                fail("The game mus be over before we run out of shots")
+            }
+
+            game = attacker.play(data.first.linearId, *shots.toTypedArray())
+
+            if(game.isGameOver())
+            {
+                assertEquals(expectedTurnCount, game.turnCount)
+                println("GAME IS OVER in $expectedTurnCount turns, the winner is: ${game.winner()}")
+                break
+            }
+
+            expectedTurnCount++
+            assertEquals(expectedTurnCount, game.turnCount)
+
+            attacker = attackers.getValue(game.getCurrentPlayerParty())
+        }
+    }
+
     private fun startGame(): Pair<PublicGameState, List<PrivateGameState>> {
         val testNodes = listOf(a, b, c, d)
 
@@ -133,6 +189,12 @@ class IntegrationTest: AbstractTestClass() {
     private fun StartedMockNode.play(gameId: UniqueIdentifier, vararg shots: Shot): PublicGameState {
         val attackFlow = AttackFlow.Initiator(shots.toList(), gameId)
         return startFlow(attackFlow).getOrThrow()
+    }
+
+    private fun <T> List<T>.toStack(): Stack<T> {
+        val stack = Stack<T>()
+        forEach { stack.push(it) }
+        return stack
     }
 }
 

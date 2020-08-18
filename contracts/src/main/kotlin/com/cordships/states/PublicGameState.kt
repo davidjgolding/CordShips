@@ -100,6 +100,13 @@ data class PublicGameState constructor(val playerBoards: Map<Party, Board>,
         return copy(playerBoards = mutablePlayerBoards)
     }
 
+    fun winner(): Party? {
+        if(!isGameOver()) {
+            return null
+        }
+        return playerBoards.keys.firstOrNull { !it.isGameOver() }
+    }
+
     fun Party.isGameOver(): Boolean {
         return playerBoards.getValue(this)
                 .sumBy { it.sumBy { c -> if (c == HitOrMiss.HIT) 1 else 0  } } >= 20
