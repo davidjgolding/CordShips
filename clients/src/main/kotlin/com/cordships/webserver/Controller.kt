@@ -39,35 +39,29 @@ class Controller(rpc: NodeRPCConnection) {
     // size of grid
     private val n = 10
     // current player
-    private val player = "playerA"
+    private val player = proxy.nodeInfo().legalIdentities.first().name.organisation
     // players
     private var players: Set<String>? = null//= setOf("playerA", "playerB", "playerC", "playerD", "playerE", "playerF")
     // grids
     private var playerBoard = MutableList(n) { MutableList(n) { 0 } }
     private var allBoards: MutableMap<String, List<List<Int>>> = HashMap()
 
-    private val grids = mutableMapOf<String, MutableList<MutableList<Int>>>(
-            "playerB" to MutableList(n) { MutableList(n) { 1 } },
-            "playerC" to MutableList(n) { MutableList(n) { 1 } },
-            "playerD" to MutableList(n) { MutableList(n) { 1 } },
-            "playerE" to MutableList(n) { MutableList(n) { 1 } },
-            "playerF" to MutableList(n) { MutableList(n) { 1 } })
     val shipsUsed = listOf(AirCraftCarrier, BattleShip, Cruiser, Destroyer, Destroyer, Submarine, Submarine)
     private var gameID: UniqueIdentifier? = null
 
     @CordaSerializable
     enum class Directions(val coord: Pair<Int, Int>) {
-        N(Pair(0, 1)),
-        S(Pair(0, -1)),
+        N(Pair(0, -1)),
+        S(Pair(0, 1)),
         E(Pair(1, 0)),
         W(Pair(-1, 0))
     }
     private fun <E> Array<E>.random(): E? = if (size > 0) get(Random().nextInt(size)) else null
 
     private fun randomPoint(direction: Int, shipSize: Int): Int {
-        return when {
-            direction > 0 -> nextInt(0, n - shipSize)
-            direction < 0 -> nextInt(shipSize, n)
+        return when (direction) {
+            1 -> nextInt(0, n - shipSize)
+            -1 -> nextInt(shipSize, n)
             else -> nextInt(0, n)
         }
     }
@@ -86,11 +80,12 @@ class Controller(rpc: NodeRPCConnection) {
             "$x$y$direction"
         }
         logger.info(startPositions.toString())
-        proxy.startFlow(::PiecePlacementFlow, gameID!!, startPositions)
-        val playerGameState = proxy.vaultQuery(com.cordships.states.PrivateGameState :: class.java).states
-        val board = playerGameState.last().state.data.board
-        logger.info(board.map{it.coordinates}.toString())
-        board.forEach { ship -> ship.coordinates.forEach { (x, y) -> playerBoard[x][y] = 2 } }
+        proxy.startFlow(::PiecePlacementFlow, gameID!!, startPositions).returnValue.then {
+            val playerGameState = proxy.vaultQuery(com.cordships.states.PrivateGameState :: class.java).states
+            val board = playerGameState.last().state.data.board
+            logger.info(board.map{it.coordinates}.toString())
+            board.forEach { ship -> ship.coordinates.forEach { (x, y) -> playerBoard[x][y] = 2 } }
+        }
     }
 
     @CrossOrigin
@@ -129,30 +124,12 @@ class Controller(rpc: NodeRPCConnection) {
     @CrossOrigin
     @GetMapping(value = ["/id"], produces = ["text/json"])
     private fun id(): ResponseEntity<String> {
-        val id: String? = proxy.nodeInfo().legalIdentities.first().name.organisation
-        return if (id != null) {
+        return if (player != null) {
             val gson = Gson()
-            val response = mapOf("playerID" to id)
+            val response = mapOf("playerID" to player)
             ResponseEntity(gson.toJson(response), HttpStatus.OK)
         } else {
             ResponseEntity("Node name not found.", HttpStatus.NOT_FOUND)
-        }
-    }
-
-    @CrossOrigin
-    @PostMapping(value = ["/grid"], produces = ["text/json"])
-    private fun setGrid(@RequestParam(value = "grid") sGrid: String): ResponseEntity<String> {
-        val gson = Gson()
-        // create type for deserialization
-        val type: Type = object : TypeToken<MutableList<MutableList<Int>>>() {}.type
-        val grid = gson.fromJson<MutableList<MutableList<Int>>>(sGrid, type)
-        return if (grid.size != n || grid[0].size != n) {
-            // ensure grid is n x n and player exists
-            ResponseEntity("Grid's dimensions aren't valid.", HttpStatus.NOT_FOUND)
-        } else {
-            // set the players grid
-            grids[player] = grid
-            return ResponseEntity("Grid set.", HttpStatus.OK)
         }
     }
 
@@ -170,7 +147,7 @@ class Controller(rpc: NodeRPCConnection) {
         updateGrids()
         val competitors = players?.minus(player)!!
         val gson = Gson()
-        val response = competitors.map{ it to grids[it] }.toMap()
+        val response = competitors.map{ it to allBoards[it] }.toMap()
         return ResponseEntity(gson.toJson(response), HttpStatus.OK)
     }
 
@@ -182,7 +159,18 @@ class Controller(rpc: NodeRPCConnection) {
         // return the requested players grid if player exists
         return if (playerID in players!!) {
             val gson = Gson()
-            val response = mapOf("size" to n, "grid" to allBoards[playerID])
+            val response = if(playerID == player) {
+                val grid = playerBoard.mapIndexed {x, row -> row.mapIndexed {y, cell ->
+                    if (allBoards[player]!![x][y] != 1) {
+                        allBoards[player]!![x][y]
+                    } else {
+                        cell
+                    }
+                }}
+                mapOf("size" to n, "grid" to grid)
+            } else {
+                mapOf("size" to n, "grid" to allBoards[playerID])
+            }
             ResponseEntity(gson.toJson(response), HttpStatus.OK)
         } else {
             ResponseEntity("Player not found.", HttpStatus.NOT_FOUND)
@@ -204,7 +192,7 @@ class Controller(rpc: NodeRPCConnection) {
         if (x !in 0..n || y !in 0..n)
             return ResponseEntity("Coordinates are invalid.", HttpStatus.BAD_REQUEST)
         // ToDo: Lookup and set
-        grids[playerID]!![x][y] = 3
+//        grids[playerID]!![x][y] = 3
         return ResponseEntity("Shot fired.", HttpStatus.OK)
     }
 }
