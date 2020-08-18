@@ -1,6 +1,7 @@
 package com.cordships
 
 import com.cordships.states.HitOrMiss
+import net.corda.core.serialization.CordaSerializable
 
 typealias Board = Array<Array<HitOrMiss>>
 
