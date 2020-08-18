@@ -1,17 +1,28 @@
 package com.cordships.webserver
 
 import com.cordships.flows.IssuePublicGameFlow
+import com.cordships.flows.PiecePlacementFlow
 import com.google.common.reflect.TypeToken
 import net.corda.client.rpc.CordaRPCClient
 import net.corda.core.utilities.NetworkHostAndPort
 import org.slf4j.LoggerFactory
 import com.google.gson.Gson
+import net.corda.core.contracts.UniqueIdentifier
 import net.corda.core.messaging.FlowHandle
 import net.corda.core.messaging.startFlow
+import org.apache.commons.lang3.RandomUtils.nextInt
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.lang.reflect.Type
+import java.util.*
+import kotlin.NoSuchElementException
+import org.apache.commons.lang3.RandomUtils.nextInt
+import com.cordships.states.Ship.ShipSize.*
+import com.cordships.states.HitOrMiss
+import net.corda.core.serialization.CordaSerializable
+import java.util.Random
+import kotlin.collections.HashMap
 
 /**
  * Define your API endpoints here.
@@ -30,17 +41,57 @@ class Controller(rpc: NodeRPCConnection) {
     // current player
     private val player = "playerA"
     // players
-    private val players: Set<String>? = setOf("playerA", "playerB", "playerC", "playerD", "playerE", "playerF")
+    private var players: Set<String>? = null//= setOf("playerA", "playerB", "playerC", "playerD", "playerE", "playerF")
     // grids
+    private var playerBoard = MutableList(n) { MutableList(n) { 0 } }
+    private var allBoards: MutableMap<String, List<List<Int>>> = HashMap()
+
     private val grids = mutableMapOf<String, MutableList<MutableList<Int>>>(
-            "playerA" to MutableList(n) { MutableList(n) { 0 } },
             "playerB" to MutableList(n) { MutableList(n) { 1 } },
             "playerC" to MutableList(n) { MutableList(n) { 1 } },
             "playerD" to MutableList(n) { MutableList(n) { 1 } },
             "playerE" to MutableList(n) { MutableList(n) { 1 } },
             "playerF" to MutableList(n) { MutableList(n) { 1 } })
+    val shipsUsed = listOf(AirCraftCarrier, BattleShip, Cruiser, Destroyer, Destroyer, Submarine, Submarine)
+    private var gameID: UniqueIdentifier? = null
 
-    private val game: FlowHandle<IssuePublicGameFlow>? = null
+    @CordaSerializable
+    enum class Directions(val coord: Pair<Int, Int>) {
+        N(Pair(0, 1)),
+        S(Pair(0, -1)),
+        E(Pair(1, 0)),
+        W(Pair(-1, 0))
+    }
+    private fun <E> Array<E>.random(): E? = if (size > 0) get(Random().nextInt(size)) else null
+
+    private fun randomPoint(direction: Int, shipSize: Int): Int {
+        return when {
+            direction > 0 -> nextInt(0, n - shipSize)
+            direction < 0 -> nextInt(shipSize, n)
+            else -> nextInt(0, n)
+        }
+    }
+
+    private fun randomStart() {
+        if (gameID == null) {
+            val playerGameState = proxy.vaultQuery(com.cordships.states.PublicGameState :: class.java).states
+            gameID = playerGameState.last().state.data.linearId
+        }
+        var startPositions = shipsUsed.map {
+            val direction = Directions.values().random()!!
+            var rand = randomPoint(direction.coord.first, it.length)
+            val x = (rand + 65).toChar()
+            val y = randomPoint(direction.coord.second, it.length)
+            logger.info("($rand,$y): $x$y$direction" )
+            "$x$y$direction"
+        }
+        logger.info(startPositions.toString())
+        proxy.startFlow(::PiecePlacementFlow, gameID!!, startPositions)
+        val playerGameState = proxy.vaultQuery(com.cordships.states.PrivateGameState :: class.java).states
+        val board = playerGameState.last().state.data.board
+        logger.info(board.map{it.coordinates}.toString())
+        board.forEach { ship -> ship.coordinates.forEach { (x, y) -> playerBoard[x][y] = 2 } }
+    }
 
     @CrossOrigin
     @PostMapping(value = ["/start"], produces = ["text/json"])
@@ -51,8 +102,10 @@ class Controller(rpc: NodeRPCConnection) {
             val playersLst = gson.fromJson<List<String>>(sPlayerIDs, List :: class.java)
             val parties = playersLst.map { proxy.partiesFromName(it, true).first() }
             val game = proxy.startFlow(::IssuePublicGameFlow, parties)
+            gameID = game.returnValue.get().linearId
+            randomStart()
             val gson = Gson()
-            val response = mapOf("gameID" to game.id.uuid)
+            val response = mapOf("gameID" to gameID!!.id.toString())
             ResponseEntity(gson.toJson(response), HttpStatus.OK)
         } catch (ex: NoSuchElementException) {
             ResponseEntity("One of the players is invalid.", HttpStatus.NOT_FOUND)
@@ -62,7 +115,9 @@ class Controller(rpc: NodeRPCConnection) {
     @CrossOrigin
     @GetMapping(value = ["/connect"], produces = ["text/json"])
     private fun connect(): ResponseEntity<String> {
+        updateGrids()
         return if (players != null) {
+            randomStart()
             val gson = Gson()
             val response = mapOf("players" to players)
             ResponseEntity(gson.toJson(response), HttpStatus.OK)
@@ -101,9 +156,18 @@ class Controller(rpc: NodeRPCConnection) {
         }
     }
 
+    private fun updateGrids() {
+        val playerGameState = proxy.vaultQuery(com.cordships.states.PublicGameState :: class.java).states
+        playerGameState.last().state.data.playerBoards.forEach { player ->
+            allBoards!![player.key.name.organisation] = player.value.map { row -> row.map{ it.num } }
+        }
+        players = allBoards?.keys?.toSet()
+    }
+
     @CrossOrigin
     @GetMapping(value = ["/competitorsGrids"], produces = ["text/json"])
     private fun getCompetitorsGrids(): ResponseEntity<String> {
+        updateGrids()
         val competitors = players?.minus(player)!!
         val gson = Gson()
         val response = competitors.map{ it to grids[it] }.toMap()
@@ -113,11 +177,12 @@ class Controller(rpc: NodeRPCConnection) {
     @CrossOrigin
     @GetMapping(value = ["/grids"], produces = ["text/json"])
     private fun getGrid(@RequestParam(value = "playerID") playerID: String): ResponseEntity<String> {
+        updateGrids()
         val gson = Gson()
         // return the requested players grid if player exists
         return if (playerID in players!!) {
             val gson = Gson()
-            val response = mapOf("size" to n, "grid" to grids[playerID])
+            val response = mapOf("size" to n, "grid" to allBoards[playerID])
             ResponseEntity(gson.toJson(response), HttpStatus.OK)
         } else {
             ResponseEntity("Player not found.", HttpStatus.NOT_FOUND)
@@ -136,7 +201,7 @@ class Controller(rpc: NodeRPCConnection) {
         if (playerID == player)
             return ResponseEntity("You can't shoot yourself.", HttpStatus.BAD_REQUEST)
         // ensure coordinates are valid
-        if (x !in 0..10 || y !in 0..10)
+        if (x !in 0..n || y !in 0..n)
             return ResponseEntity("Coordinates are invalid.", HttpStatus.BAD_REQUEST)
         // ToDo: Lookup and set
         grids[playerID]!![x][y] = 3

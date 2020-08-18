@@ -84,10 +84,10 @@ data class PublicGameState constructor(val playerBoards: Map<Party, Board>,
 
 /** Represents the outcome of an attach */
 @CordaSerializable
-enum class HitOrMiss {
-    HIT,
-    MISS,
-    UNKNOWN
+enum class HitOrMiss(val num: Int) {
+    HIT(4),
+    MISS(3),
+    UNKNOWN(1)
 }
 
 /** A simple enum for representing game status */

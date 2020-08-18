@@ -18,15 +18,17 @@ import net.corda.core.utilities.ProgressTracker
 @StartableByRPC
 class PiecePlacementFlow(
         private val gameBoardId: UniqueIdentifier,
-        private val airCraftCarrier: String,
-        private val battleship: String,
-        private val cruiser: String,
-        private val destroyer1: String,
-        private val destroyer2: String,
-        private val submarine1: String,
-        private val submarine2: String
+        private val ships: List<String>
 ) : FlowLogic<PrivateGameState>() {
     override val progressTracker = ProgressTracker()
+
+    private val airCraftCarrier = ships[0]
+    private val battleship = ships[1]
+    private val cruiser = ships[2]
+    private val destroyer1 = ships[3]
+    private val destroyer2 = ships[4]
+    private val submarine1 = ships[5]
+    private val submarine2 = ships[6]
 
     @Suspendable
     override fun call(): PrivateGameState {
