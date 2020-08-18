@@ -6,6 +6,7 @@ import net.corda.client.rpc.CordaRPCClient
 import net.corda.core.utilities.NetworkHostAndPort
 import org.slf4j.LoggerFactory
 import com.google.gson.Gson
+import net.corda.core.messaging.FlowHandle
 import net.corda.core.messaging.startFlow
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -39,16 +40,20 @@ class Controller(rpc: NodeRPCConnection) {
             "playerE" to MutableList(n) { MutableList(n) { 1 } },
             "playerF" to MutableList(n) { MutableList(n) { 1 } })
 
+    private val game: FlowHandle<IssuePublicGameFlow>? = null
+
     @CrossOrigin
     @PostMapping(value = ["/start"], produces = ["text/json"])
     private fun start(@RequestParam(value = "playerIDs") sPlayerIDs: String): ResponseEntity<String> {
         val gson = Gson()
         return try {
+            // try to start a new game with the player IDs provided
             val playersLst = gson.fromJson<List<String>>(sPlayerIDs, List :: class.java)
             val parties = playersLst.map { proxy.partiesFromName(it, true).first() }
-            val x = proxy.startFlow(::IssuePublicGameFlow, parties)
-            logger.info(x.id.toString())
-            ResponseEntity("OK", HttpStatus.OK)
+            val game = proxy.startFlow(::IssuePublicGameFlow, parties)
+            val gson = Gson()
+            val response = mapOf("gameID" to game.id.uuid)
+            ResponseEntity(gson.toJson(response), HttpStatus.OK)
         } catch (ex: NoSuchElementException) {
             ResponseEntity("One of the players is invalid.", HttpStatus.NOT_FOUND)
         }
@@ -97,7 +102,16 @@ class Controller(rpc: NodeRPCConnection) {
     }
 
     @CrossOrigin
-    @GetMapping(value = ["/grid"], produces = ["text/json"])
+    @GetMapping(value = ["/competitorsGrids"], produces = ["text/json"])
+    private fun getCompetitorsGrids(): ResponseEntity<String> {
+        val competitors = players?.minus(player)!!
+        val gson = Gson()
+        val response = competitors.map{ it to grids[it] }.toMap()
+        return ResponseEntity(gson.toJson(response), HttpStatus.OK)
+    }
+
+    @CrossOrigin
+    @GetMapping(value = ["/grids"], produces = ["text/json"])
     private fun getGrid(@RequestParam(value = "playerID") playerID: String): ResponseEntity<String> {
         val gson = Gson()
         // return the requested players grid if player exists
