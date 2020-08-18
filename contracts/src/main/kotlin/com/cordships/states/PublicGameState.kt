@@ -9,7 +9,6 @@ import net.corda.core.identity.AbstractParty
 import net.corda.core.identity.Party
 import net.corda.core.serialization.CordaSerializable
 import java.security.InvalidParameterException
-import java.lang.IllegalArgumentException
 
 /**
  * The global, public state of a given game of CordShips. This state indicated all public information
