@@ -4,7 +4,7 @@ import com.cordships.contracts.PrivateGameContract
 import net.corda.core.contracts.*
 import net.corda.core.identity.AbstractParty
 import net.corda.core.identity.Party
-import org.checkerframework.common.aliasing.qual.Unique
+import java.security.SecureRandom
 
 /**
  * This class represents a players private view of the pieces they've placed on the board. Players
@@ -19,6 +19,7 @@ data class PrivateGameState(
         val board: List<Ship>,
         val owner: Party,
         val associatedPublicGameState: UniqueIdentifier,
+        private val salt: PrivacySalt = PrivacySalt(SecureRandom.getSeed(32)),
         override val linearId: UniqueIdentifier = UniqueIdentifier()
 ) : LinearState {
     init {
