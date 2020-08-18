@@ -1,11 +1,16 @@
 package com.cordships
 
 import net.corda.core.identity.CordaX500Name
+import net.corda.core.identity.Party
 import net.corda.testing.common.internal.testNetworkParameters
+import net.corda.testing.core.singleIdentity
 import net.corda.testing.node.*
+import org.junit.After
+import org.junit.Before
+import org.junit.jupiter.api.BeforeAll
 
 abstract class AbstractTestClass {
-    val network = MockNetwork(
+    private val network: MockNetwork = MockNetwork(
             MockNetworkParameters(
                     threadPerNode = true,
                     networkParameters = testNetworkParameters(minimumPlatformVersion = 5),
@@ -17,8 +22,23 @@ abstract class AbstractTestClass {
             )
     )
 
-    val a = network.createNode(MockNodeParameters())
-    val b = network.createNode(MockNodeParameters())
-    val c = network.createNode(MockNodeParameters())
-    val d = network.createNode(MockNodeParameters())
+    val a: StartedMockNode = network.createNode(MockNodeParameters())
+    val b: StartedMockNode = network.createNode(MockNodeParameters())
+    val c: StartedMockNode = network.createNode(MockNodeParameters())
+    val d: StartedMockNode = network.createNode(MockNodeParameters())
+
+    val partyA = a.info.singleIdentity()
+    val partyB = b.info.singleIdentity()
+    val partyC = c.info.singleIdentity()
+    val partyD = d.info.singleIdentity()
+
+    @Before
+    fun setup() {
+        network.startNodes()
+    }
+
+    @After
+    fun cleanup() {
+        network.stopNodes()
+    }
 }

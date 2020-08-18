@@ -7,9 +7,6 @@ import org.junit.After
 import org.junit.Test
 
 class PiecePlacementFlowFlowTests: AbstractTestClass() {
-    @After
-    fun tearDown() = network.stopNodes()
-
     @Test
     fun `Basic set of ships all going south from the top row`() {
         val gameBoard = a.startFlow(IssuePublicGameFlow(listOf(a.info.legalIdentities.first()))).getOrThrow()
@@ -38,5 +35,4 @@ class PiecePlacementFlowFlowTests: AbstractTestClass() {
         val result = a.startFlow(PiecePlacementFlow(gameBoard.linearId,"J0W", "J1W", "J2W",
                 "J3W", "J4W", "J5W", "J6W")).get()
     }
-
 }
