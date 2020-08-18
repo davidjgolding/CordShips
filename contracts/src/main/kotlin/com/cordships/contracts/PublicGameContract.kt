@@ -12,7 +12,7 @@ import net.corda.core.transactions.LedgerTransaction
 class PublicGameContract : Contract {
 
     companion object {
-        const val ID = "com.cordships.contracts.publicgamecontract"
+        const val ID = "com.cordships.contracts.PublicGameContract"
     }
 
     override fun verify(tx: LedgerTransaction) {
@@ -20,7 +20,9 @@ class PublicGameContract : Contract {
         val command = tx.commands.requireSingleCommand<Commands>()
 
         when(command.value) {
+            is Commands.IssueGame -> requireThat {
 
+            }
             is Commands.StartGame -> requireThat {
 
             }
@@ -34,6 +36,7 @@ class PublicGameContract : Contract {
     }
 
     interface Commands : CommandData {
+        class IssueGame: Commands
         class StartGame : Commands
         class SubmitTurn : Commands
         class EndGame : Commands

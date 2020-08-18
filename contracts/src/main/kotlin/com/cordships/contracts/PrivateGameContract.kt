@@ -14,7 +14,7 @@ import net.corda.core.transactions.LedgerTransaction
 /** This contract governs the state evolution of private copies of game states for each player. */
 class PrivateGameContract : Contract {
     companion object {
-        const val ID = "com.cordships.contracts.privategamecontract"
+        const val ID = "com.cordships.contracts.PrivateGameContract"
     }
 
     override fun verify(tx: LedgerTransaction) {
@@ -23,16 +23,16 @@ class PrivateGameContract : Contract {
 
         when(command.value) {
 
-            is Commands.AddBattleShips -> requireThat{
+            is Commands.IssuePrivateGameState -> requireThat{
 
                 "There should be no input state." using (tx.inputs.isEmpty())
                 "There should be one output state." using (tx.outputs.size == 1)
-                "The output state should be of type BoardState." using (tx.outputs[0].data is PrivateGameState)
+                "The output state should be of type private game state." using (tx.outputs[0].data is PrivateGameState)
             }
         }
     }
 
     interface Commands : CommandData {
-        class AddBattleShips : Commands
+        class IssuePrivateGameState : Commands
     }
 }

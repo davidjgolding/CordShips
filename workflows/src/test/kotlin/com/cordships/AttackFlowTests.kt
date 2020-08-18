@@ -3,21 +3,11 @@ package com.cordships
 import com.cordships.flows.AttackFlow
 import net.corda.core.utilities.getOrThrow
 import net.corda.testing.core.singleIdentity
-import net.corda.testing.node.MockNetwork
-import net.corda.testing.node.MockNetworkParameters
-import net.corda.testing.node.TestCordapp
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 
-class AttackFlowTests {
-    private val network = MockNetwork(MockNetworkParameters(cordappsForAllNodes = listOf(
-        TestCordapp.findCordapp("com.template.contracts"),
-        TestCordapp.findCordapp("com.template.flows")
-    )))
-    private val a = network.createNode()
-    private val b = network.createNode()
-
+class AttackFlowTests: AbstractTestClass() {
     @Before
     fun setup() = network.runNetwork()
 
