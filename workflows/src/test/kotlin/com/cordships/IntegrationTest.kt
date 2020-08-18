@@ -4,7 +4,6 @@ import com.cordships.flows.*
 import com.cordships.states.*
 import net.corda.core.contracts.UniqueIdentifier
 import net.corda.core.identity.AbstractParty
-import net.corda.core.identity.Party
 import net.corda.core.utilities.getOrThrow
 import net.corda.testing.core.singleIdentity
 import net.corda.testing.node.StartedMockNode
