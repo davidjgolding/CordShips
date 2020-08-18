@@ -58,7 +58,7 @@ data class PublicGameState constructor(val playerBoards: Map<Party, Board>,
     fun endTurn(): PublicGameState {
         if (isGameOver()) {
             return if (status != GameStatus.GAME_OVER) {
-                copy(status = GameStatus.GAME_OVER)
+                copy(status = GameStatus.GAME_OVER, turnCount = turnCount + 1)
             } else {
                 throw InvalidParameterException("The Game was already over.")
             }
