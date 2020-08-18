@@ -16,9 +16,6 @@ class IssuePublicGameFlowFlowTests: AbstractTestClass() {
     private val aIdentity = a.info.legalIdentities.first()
     private val bIdentity = b.info.legalIdentities.first()
 
-    @After
-    fun tearDown() = network.stopNodes()
-
     @Test
     fun `A game state is successfully issued`() {
         val players = listOf(aIdentity, bIdentity)
