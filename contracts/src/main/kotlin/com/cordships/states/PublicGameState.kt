@@ -59,7 +59,7 @@ data class PublicGameState constructor(val playerBoards: Map<Party, Board>,
     ): PublicGameState {
 
         // Check if the coordinates of the attack are valid
-        if (!BoardUtils.checkIfValidPositions(attackCoordinates))
+        if (!checkIfValidPosition(attackCoordinates))
             throw IllegalStateException("Invalid board index.")
 
         // Retrieve, copy and mutate the board of the player being attacked
@@ -73,6 +73,12 @@ data class PublicGameState constructor(val playerBoards: Map<Party, Board>,
         val mutablePlayerBoards = playerBoards.toMutableMap()
         mutablePlayerBoards[playerToAttack] = newPlayerBoard
         return copy(playerBoards = mutablePlayerBoards)
+    }
+
+    private fun checkIfValidPosition(position: Pair<Int, Int>) : Boolean {
+        if(position.first < 0 || position.first >= 10) return false;
+        if(position.second < 0 || position.second >= 10) return false;
+        return true;
     }
 }
 

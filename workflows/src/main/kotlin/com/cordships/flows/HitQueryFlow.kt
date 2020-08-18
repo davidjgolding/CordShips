@@ -1,6 +1,8 @@
 package com.cordships.flows
 
 import co.paralleluniverse.fibers.Suspendable
+import com.cordships.states.HitOrMiss
+import net.corda.core.contracts.UniqueIdentifier
 import net.corda.core.flows.FlowLogic
 import net.corda.core.flows.FlowSession
 import net.corda.core.flows.InitiatedBy
@@ -13,16 +15,16 @@ object HitQueryFlow {
     @InitiatingFlow
     class Initiator(
             val adversary: Party,
-            val x: Int,
-            val y: Int,
-            val moveNumber: Int,
-            val gameId: String
-    ) : FlowLogic<Boolean?>() {
+            val coordinates: Pair<Int,Int>,
+            val turnCount: Int,
+            val gameStateId: UniqueIdentifier
+    ) : FlowLogic<HitOrMiss>() {
         @Suspendable
-        override fun call(): Boolean? {
+        override fun call(): HitOrMiss {
             val me = serviceHub.myInfo.legalIdentities.first()
-            initiateFlow(adversary).sendAndReceive<AttackOutcome>(AttackCoordinates(x, y, moveNumber, gameId, me)).unwrap {
-                return it.isHit
+            initiateFlow(adversary).sendAndReceive<AttackOutcome>(
+                    AttackCoordinates(coordinates, turnCount, gameStateId, me)).unwrap {
+                return it.hitOrMiss
             }
         }
     }
@@ -30,51 +32,71 @@ object HitQueryFlow {
     @InitiatedBy(Initiator::class)
     class QueryHandler(val otherPartySession: FlowSession) : FlowLogic<Unit>() {
         companion object {
-            val queries = HashSet<QueryId>()
+            val queries = mutableMapOf<QueryId, HitOrMiss>()
         }
         @Suspendable
         override fun call() {
             val me = serviceHub.myInfo.legalIdentities.first()
             val request = otherPartySession.receive<AttackCoordinates>().unwrap { it }
 
-            val queryId = QueryId(request.moveNumber, request.gameId)
+            val queryId = QueryId(request.turnCount, request.gameStateId)
+
+            val previousOutcome = queries[queryId]
             // proper verification will require
             // 1. recording of that info in the database
             // 2. loading the game state ans see whenever the moveNumber matches to the game
-            if (queries.contains(queryId)) {
-                otherPartySession.send(AttackOutcome(request.x, request.y, request.moveNumber, request.gameId, request.attacker, me, null))
+            if (previousOutcome != null) {
+                otherPartySession.send(AttackOutcome(
+                        request.coordinates,
+                        request.turnCount,
+                        request.gameStateId,
+                        request.attacker,
+                        me,
+                        previousOutcome))
             } else {
-                // TODO - add the actual outcome
-                // 1. Load the private view and check whenever we hit a ship or miss
-                // queries.add(queryId)
-                otherPartySession.send(AttackOutcome(request.x, request.y, request.moveNumber, request.gameId, request.attacker, me, true))
+                val game = serviceHub.loadPublicGameState(request.gameStateId).state.data
+
+                if(game.turnCount != request.turnCount || game.getCurrentPlayerParty() != request.attacker) {
+                    queries[queryId] = HitOrMiss.UNKNOWN
+                    otherPartySession.send(AttackOutcome(
+                            request.coordinates,
+                            request.turnCount,
+                            request.gameStateId,
+                            request.attacker,
+                            me,
+                            HitOrMiss.UNKNOWN))
+                }
+
+                val privateBoard = serviceHub.loadPrivateGameState(request.gameStateId).state.data
+                val hitOrMiss = privateBoard.isHitOrMiss(request.coordinates)
+                queries[queryId] = hitOrMiss
+                otherPartySession.send(AttackOutcome(request.coordinates, request.turnCount, request.gameStateId, request.attacker, me, hitOrMiss))
             }
         }
     }
 
+    @CordaSerializable
     data class QueryId(
-            val moveNumber: Int,
-            val gameId: String
+            val turnCount: Int,
+            val gameStateId: UniqueIdentifier
     )
 
     @CordaSerializable
     data class AttackCoordinates(
-            val x: Int,
-            val y: Int,
-            val moveNumber: Int,
-            val gameId: String,
+            val coordinates: Pair<Int,Int>,
+            val turnCount: Int,
+            val gameStateId: UniqueIdentifier,
             val attacker: Party
     )
 
     @CordaSerializable
     data class AttackOutcome(
-            val x: Int,
-            val y: Int,
-            val moveNumber: Int,
-            val gameId: String,
+            val coordinates: Pair<Int,Int>,
+            val turnCount: Int,
+            val gameStateId: UniqueIdentifier,
             val attacker: Party,
             val adversary: Party,
-            val isHit: Boolean?
+            val hitOrMiss: HitOrMiss
     )
 }
 

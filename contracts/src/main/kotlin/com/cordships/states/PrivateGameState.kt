@@ -28,6 +28,13 @@ data class PrivateGameState(
         }
     }
     override val participants: List<AbstractParty> = listOf(owner)
+
+    fun isHitOrMiss(coordinates: Pair<Int, Int>) : HitOrMiss {
+        return when(board.any {it.coordinates.any { xy -> xy == coordinates } }) {
+            true -> HitOrMiss.HIT
+            else -> HitOrMiss.MISS
+        }
+    }
 }
 
 /** A utility function to retrieve a safe value from an enum */
