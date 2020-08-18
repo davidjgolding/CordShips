@@ -22,17 +22,20 @@ class Controller(rpc: NodeRPCConnection) {
     }
 
     private val proxy = rpc.proxy
-
+    // size of grid
     private val n = 10
+    // current player
     private val player = "playerA"
+    // players
     private val players: Set<String>? = setOf("playerA", "playerB", "playerC", "playerD", "playerE", "playerF")
+    // grids
     private val grids = mutableMapOf<String, MutableList<MutableList<Int>>>(
-            "playerA" to MutableList(10) { MutableList(10) { 0 } },
-            "playerB" to MutableList(10) { MutableList(10) { 1 } },
-            "playerC" to MutableList(10) { MutableList(10) { 1 } },
-            "playerD" to MutableList(10) { MutableList(10) { 1 } },
-            "playerE" to MutableList(10) { MutableList(10) { 1 } },
-            "playerF" to MutableList(10) { MutableList(10) { 1 } })
+            "playerA" to MutableList(n) { MutableList(n) { 0 } },
+            "playerB" to MutableList(n) { MutableList(n) { 1 } },
+            "playerC" to MutableList(n) { MutableList(n) { 1 } },
+            "playerD" to MutableList(n) { MutableList(n) { 1 } },
+            "playerE" to MutableList(n) { MutableList(n) { 1 } },
+            "playerF" to MutableList(n) { MutableList(n) { 1 } })
 
     @GetMapping(value = ["/connect"], produces = ["text/json"])
     private fun connect(): ResponseEntity<String> {
@@ -41,7 +44,7 @@ class Controller(rpc: NodeRPCConnection) {
             val response = mapOf("players" to players)
             ResponseEntity(gson.toJson(response), HttpStatus.OK)
         } else {
-            ResponseEntity("Player not found.", HttpStatus.NOT_FOUND)
+            ResponseEntity("Not ready.", HttpStatus.NOT_FOUND)
         }
     }
 
@@ -53,7 +56,7 @@ class Controller(rpc: NodeRPCConnection) {
         val grid = gson.fromJson<MutableList<MutableList<Int>>>(sGrid, type)
         return if (grid.size != n || grid[0].size != n) {
             // ensure grid is n x n and player exists
-            ResponseEntity("Player not found.", HttpStatus.NOT_FOUND)
+            ResponseEntity("Grid's dimensions aren't valid.", HttpStatus.NOT_FOUND)
         } else {
             // set the players grid
             grids[player] = grid
