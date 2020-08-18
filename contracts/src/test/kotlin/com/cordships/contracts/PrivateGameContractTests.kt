@@ -92,7 +92,6 @@ class PrivateGameContractTests {
         ledgerServices.ledger {
             transaction {
                 command(partyA.publicKey, IssuePrivateGameState())
-                output(PrivateGameContract.ID, PrivateGameState(board, partyA.party, UniqueIdentifier()))
                 tweak {
                     output(PrivateGameContract.ID, PrivateGameState(
                             createTestGameBoard(numAirCraftCarrier = 2, numBattleShips = 0),
@@ -123,6 +122,7 @@ class PrivateGameContractTests {
                             partyA.party, UniqueIdentifier()))
                     fails()
                 }
+                output(PrivateGameContract.ID, PrivateGameState(board, partyA.party, UniqueIdentifier()))
                 verifies()
             }
         }
