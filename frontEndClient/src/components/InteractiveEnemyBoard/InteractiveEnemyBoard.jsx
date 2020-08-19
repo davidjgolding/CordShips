@@ -66,6 +66,9 @@ function InteractiveEnemyBoard(props){
                 })
 
                 switch (element.type) {
+                    case 1:
+                        gridItemType += "emptyBoardItem"
+                        break;
                     case 0:
                         gridItemType += "emptyBoardItem"
                         break;
