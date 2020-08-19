@@ -110,11 +110,20 @@ object AttackFlow {
         override fun call() {
             val signTransactionFlow = object : SignTransactionFlow(otherPartySession) {
                 override fun checkTransaction(stx: SignedTransaction) = requireThat {
-                    val output = stx.tx.outputs.single().data as PublicGameState
-
-                    val privateBoard = serviceHub.loadPrivateGameState(output.linearId).state.data
-                            //val hitOrMiss = privateBoard.isHitOrMiss(coordinates)
-
+                    val game = stx.tx.outputs.single().data as PublicGameState
+                    val command = stx.tx.commands.single().value
+                    if(command is PublicGameContract.Commands.Attack) {
+                        val me = serviceHub.myInfo.legalIdentities.first()
+                        val shotsToMe = command.shots.filter { it.adversary == me }
+                        if(shotsToMe.isNotEmpty()) {
+                            val privateBoard = serviceHub.loadPrivateGameState(game.linearId).state.data
+                            val myPublicBoard = game.playerBoards.getValue(me)
+                            shotsToMe.forEach {
+                                "The shot's 'hit or miss' must match my private board state." using (it.hitOrMiss == privateBoard.isHitOrMiss(it.coordinates))
+                                "The shot's 'hit or miss' must match my public board state." using (it.hitOrMiss == myPublicBoard[it.coordinates.first][it.coordinates.second])
+                            }
+                        }
+                    }
                 }
             }
 

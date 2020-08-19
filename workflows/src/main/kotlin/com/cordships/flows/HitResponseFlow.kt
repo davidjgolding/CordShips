@@ -76,11 +76,7 @@ object HitResponseFlow {
 
             val txId = subFlow(signTransactionFlow).id
 
-            val tx = subFlow(ReceiveFinalityFlow(otherPartySession, expectedTxId = txId))
-
-            val output = tx.tx.outputs.single().data as HitResponseState
-
-            println("Finalized hit response by ${serviceHub.myInfo.legalIdentities.first()} from ${output.attacker} to ${output.owner} in ${output.turnCount} turn")
+            subFlow(ReceiveFinalityFlow(otherPartySession, expectedTxId = txId))
         }
     }
 }
