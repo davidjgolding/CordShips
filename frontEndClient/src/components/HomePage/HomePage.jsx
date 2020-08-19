@@ -60,8 +60,6 @@ function HomePage(props){
     useInterval(async() => {
         console.log("polling")
 
-        //Get the player grid
-        //will need to change the end point (for now pretend its playerA)
         axios.get(`${USER_HOST}api/grids`, {
             params: {
                 playerID: USER_ID

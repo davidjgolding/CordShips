@@ -1,7 +1,6 @@
 package com.cordships.webserver
 
-import com.cordships.flows.IssuePublicGameFlow
-import com.cordships.flows.PiecePlacementFlow
+import com.cordships.flows.*
 import com.google.common.reflect.TypeToken
 import net.corda.client.rpc.CordaRPCClient
 import net.corda.core.utilities.NetworkHostAndPort
@@ -20,6 +19,7 @@ import kotlin.NoSuchElementException
 import org.apache.commons.lang3.RandomUtils.nextInt
 import com.cordships.states.Ship.ShipSize.*
 import com.cordships.states.HitOrMiss
+import net.corda.core.messaging.startTrackedFlow
 import net.corda.core.serialization.CordaSerializable
 import java.util.Random
 import kotlin.collections.HashMap
@@ -49,6 +49,8 @@ class Controller(rpc: NodeRPCConnection) {
     val shipsUsed = listOf(AirCraftCarrier, BattleShip, Cruiser, Destroyer, Destroyer, Submarine, Submarine)
     private var gameID: UniqueIdentifier? = null
 
+    private var gameStarted = false
+
     @CordaSerializable
     enum class Directions(val coord: Pair<Int, Int>) {
         N(Pair(0, -1)),
@@ -71,6 +73,7 @@ class Controller(rpc: NodeRPCConnection) {
             val playerGameState = proxy.vaultQuery(com.cordships.states.PublicGameState :: class.java).states
             gameID = playerGameState.last().state.data.linearId
         }
+
         var startPositions = shipsUsed.map {
             val direction = Directions.values().random()!!
             var rand = randomPoint(direction.coord.first, it.length)
@@ -99,6 +102,7 @@ class Controller(rpc: NodeRPCConnection) {
             val game = proxy.startFlow(::IssuePublicGameFlow, parties)
             gameID = game.returnValue.get().linearId
             randomStart()
+            players = playersLst.toSet()
             val gson = Gson()
             val response = mapOf("gameID" to gameID!!.id.toString())
             ResponseEntity(gson.toJson(response), HttpStatus.OK)
@@ -108,17 +112,28 @@ class Controller(rpc: NodeRPCConnection) {
     }
 
     @CrossOrigin
+    @GetMapping(value = ["/random"], produces = ["text/json"])
+    private fun random(): ResponseEntity<String> {
+        val gson = Gson()
+        var startPositions = shipsUsed.map {
+            val direction = Directions.values().random()!!
+            var rand = randomPoint(direction.coord.first, it.length)
+            val x = (rand + 65).toChar()
+            val y = randomPoint(direction.coord.second, it.length)
+            logger.info("($rand,$y): $x$y$direction" )
+            "$x$y$direction"
+        }
+       return ResponseEntity(gson.toJson(startPositions), HttpStatus.OK)
+    }
+
+
+    @CrossOrigin
     @GetMapping(value = ["/connect"], produces = ["text/json"])
     private fun connect(): ResponseEntity<String> {
         updateGrids()
-        return if (players != null) {
-            randomStart()
-            val gson = Gson()
-            val response = mapOf("players" to players)
-            ResponseEntity(gson.toJson(response), HttpStatus.OK)
-        } else {
-            ResponseEntity("Not ready.", HttpStatus.NOT_FOUND)
-        }
+        val gson = Gson()
+        val response = mapOf("players" to players)
+        return ResponseEntity(gson.toJson(response), HttpStatus.OK)
     }
 
     @CrossOrigin
@@ -139,6 +154,7 @@ class Controller(rpc: NodeRPCConnection) {
             allBoards!![player.key.name.organisation] = player.value.map { row -> row.map{ it.num } }
         }
         players = allBoards?.keys?.toSet()
+        gameID = playerGameState.last().state.data.linearId
     }
 
     @CrossOrigin
@@ -160,6 +176,9 @@ class Controller(rpc: NodeRPCConnection) {
         return if (playerID in players!!) {
             val gson = Gson()
             val response = if(playerID == player) {
+                val playerGameState = proxy.vaultQuery(com.cordships.states.PrivateGameState :: class.java)
+                val board = playerGameState.states.last().state.data.board
+                board.forEach { ship -> ship.coordinates.forEach { (x, y) -> playerBoard[x][y] = 2 } }
                 val grid = playerBoard.mapIndexed {x, row -> row.mapIndexed {y, cell ->
                     if (allBoards[player]!![x][y] != 1) {
                         allBoards[player]!![x][y]
@@ -182,8 +201,11 @@ class Controller(rpc: NodeRPCConnection) {
     private fun shoot(@RequestParam(value = "playerID") playerID: String,
                       @RequestParam(value = "x") x: Int,
                       @RequestParam(value = "y") y: Int): ResponseEntity<String> {
+        if (gameID == null) {
+            updateGrids()
+        }
         // ensure requested player exists
-        if (player !in players!!)
+        if (playerID !in players!!)
             return ResponseEntity("Player not found.", HttpStatus.NOT_FOUND)
         // ensure you can't shoot yourself
         if (playerID == player)
@@ -191,8 +213,20 @@ class Controller(rpc: NodeRPCConnection) {
         // ensure coordinates are valid
         if (x !in 0..n || y !in 0..n)
             return ResponseEntity("Coordinates are invalid.", HttpStatus.BAD_REQUEST)
-        // ToDo: Lookup and set
-//        grids[playerID]!![x][y] = 3
+        val playerParty = proxy.partiesFromName(playerID, true).first()
+        proxy.startFlow(::AttackFlow, listOf(Shot(Pair(x, y), playerParty)), gameID!!)
         return ResponseEntity("Shot fired.", HttpStatus.OK)
+    }
+
+    @CrossOrigin
+    @GetMapping(value = ["/turn"], produces = ["text/json"])
+    private fun turn(): ResponseEntity<String> {
+        val playerGameState = proxy.vaultQuery(com.cordships.states.PublicGameState :: class.java).states
+        val playerTurn = players!!.toList()[playerGameState.last().state.data.partyTurn]
+        val winner: String? = playerGameState.last().state.data.getWinner()?.name?.organisation
+        val response = mapOf("turn" to playerTurn, "winner" to (winner ?: "null"))
+        val gson = Gson()
+        return ResponseEntity(gson.toJson(response), HttpStatus.OK)
+
     }
 }
