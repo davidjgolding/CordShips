@@ -112,6 +112,22 @@ class Controller(rpc: NodeRPCConnection) {
     }
 
     @CrossOrigin
+    @GetMapping(value = ["/random"], produces = ["text/json"])
+    private fun random(): ResponseEntity<String> {
+        val gson = Gson()
+        var startPositions = shipsUsed.map {
+            val direction = Directions.values().random()!!
+            var rand = randomPoint(direction.coord.first, it.length)
+            val x = (rand + 65).toChar()
+            val y = randomPoint(direction.coord.second, it.length)
+            logger.info("($rand,$y): $x$y$direction" )
+            "$x$y$direction"
+        }
+       return ResponseEntity(gson.toJson(startPositions), HttpStatus.OK)
+    }
+
+
+    @CrossOrigin
     @GetMapping(value = ["/connect"], produces = ["text/json"])
     private fun connect(): ResponseEntity<String> {
         updateGrids()
@@ -160,6 +176,9 @@ class Controller(rpc: NodeRPCConnection) {
         return if (playerID in players!!) {
             val gson = Gson()
             val response = if(playerID == player) {
+                val playerGameState = proxy.vaultQuery(com.cordships.states.PrivateGameState :: class.java)
+                val board = playerGameState.states.last().state.data.board
+                board.forEach { ship -> ship.coordinates.forEach { (x, y) -> playerBoard[x][y] = 2 } }
                 val grid = playerBoard.mapIndexed {x, row -> row.mapIndexed {y, cell ->
                     if (allBoards[player]!![x][y] != 1) {
                         allBoards[player]!![x][y]
