@@ -21,15 +21,19 @@ function EnemyBoards(props){
     }
 
     function endTurn(){
-        if(context.selected.length < SHOT_LIMIT){
-            //TODO: Display some sort of message
-            return
-        }else{
+        // if(context.selected.length < SHOT_LIMIT){
+        //     //TODO: Display some sort of message
+        //     return
+        //
             context.selected.forEach(element => {
-                axios.post(`${USER_HOST}api/shoot`,{ playerID: element.id,
+                axios.post(`${USER_HOST}api/shoot`,null, { params: {
+                    playerID: element.id,
                     x: element.x,
                     y: element.y,
-                    })
+                    }},{ headers: {
+                        'Content-Type': 'text/json',
+                        'Accept' : 'text/json'
+                    }} )
                   .then(function (response) {
                     console.log(response);
                   })
@@ -41,7 +45,7 @@ function EnemyBoards(props){
             //Clear the selected state
             context.setAppState([])
             setUpdate((update) => update +1)
-        }
+        //}
     }
 
     return(

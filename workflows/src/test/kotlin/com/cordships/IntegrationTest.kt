@@ -194,7 +194,7 @@ class IntegrationTest: AbstractTestClass() {
         shots.forEach {
             println("ADVERSARY: ${it.adversary.name}")
         }
-        val attackFlow = AttackFlow.Initiator(shots.toList(), gameId)
+        val attackFlow = AttackFlow(shots.toList(), gameId)
         return startFlow(attackFlow).getOrThrow()
     }
 

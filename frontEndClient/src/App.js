@@ -6,7 +6,7 @@ import HomePage from './components/HomePage/HomePage';
 import { AppProvider } from './context/AppContext';
 
 export const SHOT_LIMIT = 3;
-export const POLLING_INTERVAL = 100 * 20;
+export const POLLING_INTERVAL = 1000 * 1;
 export const USER_HOST = process.env.REACT_APP_APIHOST.trim();
 export const USER_ID = process.env.REACT_APP_USER_ID.trim();
 
