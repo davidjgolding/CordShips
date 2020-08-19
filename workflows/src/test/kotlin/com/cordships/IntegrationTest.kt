@@ -148,6 +148,8 @@ class IntegrationTest: AbstractTestClass() {
 
             game = attacker.play(data.first.linearId, *shots.toTypedArray())
 
+            expectedTurnCount++
+
             if(game.isGameOver())
             {
                 println("GAME IS OVER in $expectedTurnCount turns, the winner is: ${game.getWinner()}")
@@ -161,7 +163,6 @@ class IntegrationTest: AbstractTestClass() {
                 println("PARTY: ${it.first.name} is the game over ${it.second}")
             }
 
-            expectedTurnCount++
             assertEquals(expectedTurnCount, game.turnCount)
 
             attacker = attackers.getValue(game.getCurrentPlayerParty())
