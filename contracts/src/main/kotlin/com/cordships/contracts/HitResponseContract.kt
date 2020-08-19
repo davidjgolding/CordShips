@@ -4,9 +4,9 @@ import net.corda.core.contracts.CommandData
 import net.corda.core.contracts.Contract
 import net.corda.core.transactions.LedgerTransaction
 
-class HitQueryContract : Contract {
+class HitResponseContract : Contract {
     companion object {
-        const val ID = "com.cordships.contracts.HitQueryContract"
+        const val ID = "com.cordships.contracts.HitResponseContract"
     }
 
     override fun verify(tx: LedgerTransaction) {
