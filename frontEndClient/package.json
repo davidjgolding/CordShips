@@ -13,10 +13,10 @@
     "react-scripts": "3.4.3"
   },
   "scripts": {
-    "startClient1": "PORT=3006 react-scripts start",
-    "startClient2": "PORT=3007 react-scripts start",
-    "startClient3": "PORT=3008 react-scripts start",
-    "startClient4": "PORT=3009 react-scripts start",
+    "startClient1": "SET PORT=3001 && SET REACT_APP_APIHOST=http://localhost:10050/ && SET REACT_APP_USER_ID=PartyA && react-scripts start",
+    "startClient2": "SET PORT=3002 && SET REACT_APP_APIHOST=http://localhost:10051/ && SET REACT_APP_USER_ID=PartyB && react-scripts start",
+    "startClient3": "SET PORT=3003 && SET REACT_APP_APIHOST=http://localhost:10052/ && SET REACT_APP_USER_ID=PartyC && react-scripts start",
+    "startClient4": "SET PORT=3004 && SET REACT_APP_APIHOST=http://localhost:10053/ && SET REACT_APP_USER_ID=PartyD && react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"

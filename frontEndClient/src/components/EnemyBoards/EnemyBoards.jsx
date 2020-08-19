@@ -26,14 +26,10 @@ function EnemyBoards(props){
             return
         }else{
             context.selected.forEach(element => {
-                axios.post(`${USER_HOST}api/shoot`,null, { params: {
-                    playerID: element.id,
+                axios.post(`${USER_HOST}api/shoot`,{ playerID: element.id,
                     x: element.x,
                     y: element.y,
-                    }},{ headers: {
-                        'Content-Type': 'text/json',
-                        'Accept' : 'text/json'
-                    }} )
+                    })
                   .then(function (response) {
                     console.log(response);
                   })
