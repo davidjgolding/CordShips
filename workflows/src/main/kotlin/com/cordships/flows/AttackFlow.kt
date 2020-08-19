@@ -4,10 +4,9 @@ import co.paralleluniverse.fibers.Suspendable
 import com.cordships.contracts.PublicGameContract
 import com.cordships.states.GameStatus
 import com.cordships.states.HitOrMiss
+import com.cordships.states.HitResponseState
 import com.cordships.states.PublicGameState
-import net.corda.core.contracts.Command
-import net.corda.core.contracts.UniqueIdentifier
-import net.corda.core.contracts.requireThat
+import net.corda.core.contracts.*
 import net.corda.core.flows.*
 import net.corda.core.identity.Party
 import net.corda.core.serialization.CordaSerializable
@@ -65,6 +64,9 @@ object AttackFlow {
                 PublicGameContract.Commands.Shot(it.coordinates, it.adversary, hitOrMiss)
             }
 
+            val outcomeStateRef = serviceHub.loadHitResponseState(gameStateId, gameState.turnCount)
+                    ?: throw InvalidParameterException("Didn't find the response hit state.")
+
             var playedGameState = gameState
             outcomes.forEach {
                 playedGameState = playedGameState.updateBoardWithAttack(it.coordinates, it.adversary, it.hitOrMiss)
@@ -72,11 +74,12 @@ object AttackFlow {
             playedGameState = playedGameState.endTurn()
 
 
-            val publicKeys = gameState.participants.map { it.owningKey }.toMutableList()
+            val publicKeys = gameState.participants.map { it.owningKey }
 
             val notary = serviceHub.defaultNotary()
             val txCommand = Command(PublicGameContract.Commands.Attack(outcomes, me), publicKeys)
             val txBuilder = TransactionBuilder(notary)
+                    .addReferenceState(ReferencedStateAndRef(outcomeStateRef))
                     .addInputState(gameStateAndRef)
                     .addOutputState(playedGameState, PublicGameContract.ID)
                     .addCommand(txCommand)
@@ -103,7 +106,11 @@ object AttackFlow {
         override fun call() {
             val signTransactionFlow = object : SignTransactionFlow(otherPartySession) {
                 override fun checkTransaction(stx: SignedTransaction) = requireThat {
-                    val output = stx.tx.outputs.single().data
+                    val output = stx.tx.outputs.single().data as PublicGameState
+
+                    val privateBoard = serviceHub.loadPrivateGameState(output.linearId).state.data
+                            //val hitOrMiss = privateBoard.isHitOrMiss(coordinates)
+
                 }
             }
 

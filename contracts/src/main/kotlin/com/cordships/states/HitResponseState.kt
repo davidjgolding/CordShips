@@ -1,14 +1,15 @@
 package com.cordships.states
 
-import com.cordships.contracts.HitQueryContract
+import com.cordships.contracts.HitResponseContract
 import net.corda.core.contracts.BelongsToContract
 import net.corda.core.contracts.LinearState
 import net.corda.core.contracts.UniqueIdentifier
 import net.corda.core.identity.AbstractParty
 import net.corda.core.identity.Party
 
-@BelongsToContract(HitQueryContract::class)
-data class HitQueryState(
+@BelongsToContract(HitResponseContract::class)
+data class HitResponseState(
+        val attacker: Party,
         val owner: Party,
         val gameStateId: UniqueIdentifier,
         val turnCount: Int,

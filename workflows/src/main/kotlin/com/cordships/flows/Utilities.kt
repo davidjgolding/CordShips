@@ -1,6 +1,6 @@
 package com.cordships.flows
 
-import com.cordships.states.HitQueryState
+import com.cordships.states.HitResponseState
 import com.cordships.states.PrivateGameState
 import com.cordships.states.PublicGameState
 import net.corda.core.contracts.StateAndRef
@@ -21,7 +21,7 @@ fun ServiceHub.loadPrivateGameState(gameStateId: UniqueIdentifier): StateAndRef<
         vaultService.queryBy<PrivateGameState>()
                 .states.single { it.state.data.associatedPublicGameState == gameStateId }
 
-fun ServiceHub.loadHitQueryState(gameStateId: UniqueIdentifier, turnCount: Int): StateAndRef<HitQueryState>? =
-        vaultService.queryBy<HitQueryState>(
-                QueryCriteria.LinearStateQueryCriteria(linearId = listOf(HitQueryState.makeId(gameStateId, turnCount)))
+fun ServiceHub.loadHitResponseState(gameStateId: UniqueIdentifier, turnCount: Int): StateAndRef<HitResponseState>? =
+        vaultService.queryBy<HitResponseState>(
+                QueryCriteria.LinearStateQueryCriteria(linearId = listOf(HitResponseState.makeId(gameStateId, turnCount)))
         ).states.singleOrNull()
