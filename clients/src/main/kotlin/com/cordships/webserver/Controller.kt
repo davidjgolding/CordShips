@@ -204,8 +204,8 @@ class Controller(rpc: NodeRPCConnection) {
     private fun turn(): ResponseEntity<String> {
         val playerGameState = proxy.vaultQuery(com.cordships.states.PublicGameState :: class.java).states
         val playerTurn = players!!.toList()[playerGameState.last().state.data.partyTurn]
-        val response = mapOf("turn" to playerTurn,
-                             "winner" to playerGameState.last().state.data.getWinner())
+        val winner: String? = playerGameState.last().state.data.getWinner()?.name?.organisation
+        val response = mapOf("turn" to playerTurn, "winner" to (winner ?: "null"))
         val gson = Gson()
         return ResponseEntity(gson.toJson(response), HttpStatus.OK)
 
