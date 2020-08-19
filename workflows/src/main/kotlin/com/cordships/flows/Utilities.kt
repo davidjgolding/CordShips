@@ -23,9 +23,8 @@ fun ServiceHub.loadPrivateGameState(gameStateId: UniqueIdentifier): StateAndRef<
                 .states.single { it.state.data.associatedPublicGameState == gameStateId }
 
 fun ServiceHub.loadHitResponseState(gameStateId: UniqueIdentifier, owner: Party, turnCount: Int): StateAndRef<HitResponseState>? {
+        val id = HitResponseState.makeId(gameStateId, owner, turnCount)
         return vaultService.queryBy<HitResponseState>().states.singleOrNull {
-                it.state.data.gameStateId == gameStateId
-                        && it.state.data.owner == owner
-                        && it.state.data.turnCount == turnCount
+                it.state.data.uniqueId == id
         }
 }
