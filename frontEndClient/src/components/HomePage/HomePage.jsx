@@ -17,6 +17,7 @@ function HomePage(props){
     const [userName, setUserName] = useState("Not Logged In")
     const [userTurn, setUserTurn] = useState("Defualt")
     const [winner, setWinner] = useState("Game Still In Progress")
+    const [gameProgressClass, setGameProgressClass] = useState("inProgress")
 
     //This needs to be set to false once we know its the players turn
     const [isPolling, setIsPolling] = useState(true)
@@ -87,7 +88,13 @@ function HomePage(props){
 
         axios.get(`${USER_HOST}api/turn`).then(function (response) {
             if(response.data.winner.includes("Party")){
-                setWinner(response.data.winner + " has won the game")
+                if(response.data.winner == USER_ID){
+                    setWinner("You have won the game!")
+                }else{
+                    setWinner(response.data.winner + " has won the game")
+                }
+                
+                setGameProgressClass("winner");
             }
 
             setUserTurn(response.data.turn)
@@ -105,7 +112,7 @@ function HomePage(props){
             </div>
             
             <div className="playerGameStateTitle"> 
-                <div>{winner}</div>
+                <div className={gameProgressClass}>{winner}</div>
                 <div>Your Battle State</div>
                 <div>Current Users Turn : {userTurn}</div>
                 <div className="indicatorWrapper">
