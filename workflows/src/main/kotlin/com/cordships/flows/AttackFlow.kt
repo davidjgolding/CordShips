@@ -4,7 +4,6 @@ import co.paralleluniverse.fibers.Suspendable
 import com.cordships.contracts.PublicGameContract
 import com.cordships.states.GameStatus
 import com.cordships.states.HitOrMiss
-import com.cordships.states.HitResponseState
 import com.cordships.states.PublicGameState
 import net.corda.core.contracts.*
 import net.corda.core.flows.*
@@ -64,8 +63,10 @@ object AttackFlow {
                 PublicGameContract.Commands.Shot(it.coordinates, it.adversary, hitOrMiss)
             }
 
-            val outcomeStateRef = serviceHub.loadHitResponseState(gameStateId, gameState.turnCount)
-                    ?: throw InvalidParameterException("Didn't find the response hit state.")
+            val outcomeStateRefs = shots.map {
+                serviceHub.loadHitResponseState(gameStateId, it.adversary, gameState.turnCount)
+                        ?: throw InvalidParameterException("Didn't find the response hit state.")
+            }
 
             var playedGameState = gameState
             outcomes.forEach {
@@ -79,10 +80,13 @@ object AttackFlow {
             val notary = serviceHub.defaultNotary()
             val txCommand = Command(PublicGameContract.Commands.Attack(outcomes, me), publicKeys)
             val txBuilder = TransactionBuilder(notary)
-                    .addReferenceState(ReferencedStateAndRef(outcomeStateRef))
                     .addInputState(gameStateAndRef)
                     .addOutputState(playedGameState, PublicGameContract.ID)
                     .addCommand(txCommand)
+
+            outcomeStateRefs.forEach {
+                txBuilder.addReferenceState(ReferencedStateAndRef(it))
+            }
 
             txBuilder.verify(serviceHub)
 

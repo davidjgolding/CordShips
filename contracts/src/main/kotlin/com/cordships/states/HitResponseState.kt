@@ -14,11 +14,6 @@ data class HitResponseState(
         val gameStateId: UniqueIdentifier,
         val turnCount: Int,
         val hitOrMiss: HitOrMiss,
-        override val participants: List<AbstractParty> = listOf(owner),
-        override val linearId: UniqueIdentifier = makeId(gameStateId, turnCount)
-) : LinearState {
-    companion object {
-        fun makeId(gameStateId: UniqueIdentifier, turnCount: Int) =
-                UniqueIdentifier("${gameStateId}_$turnCount")
-    }
-}
+        override val participants: List<AbstractParty>,
+        override val linearId: UniqueIdentifier = UniqueIdentifier()
+) : LinearState

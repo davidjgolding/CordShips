@@ -28,7 +28,7 @@ object HitResponseFlow {
                 throw InvalidParameterException("The adversary must be me.")
             }
 
-            var queryState = serviceHub.loadHitResponseState(gameStateId, turnCount)?.state?.data
+            var queryState = serviceHub.loadHitResponseState(gameStateId, me, turnCount)?.state?.data
 
             if (queryState != null) {
                 return queryState
@@ -44,7 +44,7 @@ object HitResponseFlow {
 
                 val notary = serviceHub.defaultNotary()
                 val publicKeys = game.participants.map { it.owningKey }.toMutableList()
-                queryState = HitResponseState(attacker, me, gameStateId, turnCount, hitOrMiss)
+                queryState = HitResponseState(attacker, me, gameStateId, turnCount, hitOrMiss, game.participants)
                 val txCommand = Command(HitResponseContract.Commands.Issue(), publicKeys)
                 val txBuilder = TransactionBuilder(notary)
                         .addOutputState(queryState, HitResponseContract.ID)
@@ -76,9 +76,11 @@ object HitResponseFlow {
 
             val txId = subFlow(signTransactionFlow).id
 
-            subFlow(ReceiveFinalityFlow(otherPartySession, expectedTxId = txId))
+            val tx = subFlow(ReceiveFinalityFlow(otherPartySession, expectedTxId = txId))
 
-            println("Finalized hit response by ${serviceHub.myInfo.legalIdentities.first()}")
+            val output = tx.tx.outputs.single().data as HitResponseState
+
+            println("Finalized hit response by ${serviceHub.myInfo.legalIdentities.first()} from ${output.attacker} to ${output.owner} in ${output.turnCount} turn")
         }
     }
 }
