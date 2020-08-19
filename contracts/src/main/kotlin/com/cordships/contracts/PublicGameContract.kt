@@ -23,7 +23,7 @@ class PublicGameContract : Contract {
 
         val command = tx.commands.requireSingleCommand<Commands>()
 
-        when(command.value) {
+        when (command.value) {
             is Commands.IssueGame -> requireThat {
 
                 var input = tx.inputs;
@@ -77,30 +77,60 @@ class PublicGameContract : Contract {
                 "Player proofs must remain the same." using (inputPublicGameState.playerProofs == outputPublicGameState.playerProofs)
 
                 var attack = command.value as Commands.Attack
-                "You can't attack yourself." using (attack.shots.any() {it.adversary != attack.attacker})
+                "You can't attack yourself." using (attack.shots.any() { it.adversary != attack.attacker })
 
                 // Removing as BoardUtils is throwing a seal exception.  Will investigate later:::
                 //"Attack position is not valid." using (attack.shots.any() { BoardUtils.checkIfValidPositions(it.coordinates)})
                 "Adversary unknown." using (attack.shots.any() { outputPublicGameState.playerBoards.keys.contains(it.adversary) })
                 "Attacker unknown." using (outputPublicGameState.playerBoards.keys.contains(attack.attacker))
+
+                // Values which changed must be in the attack command and vice versa
+                val inputPlayerBoards = (tx.inputs[0].state.data as PublicGameState).playerBoards
+                val boardChanges = mutableMapOf<Party, MutableList<Pair<Pair<Int, Int>, HitOrMiss>>>()
+                inputPlayerBoards.keys.forEach { party ->
+                    val inputPlayerBoard = inputPlayerBoards[party]
+                    val outputPlayerBoard = (tx.outputs[0].data as PublicGameState).playerBoards[party]
+                    boardChanges[party] = mutableListOf()
+                    when {
+                        inputPlayerBoard != null && outputPlayerBoard != null -> {
+                            "Board size cannot change during attack" using (inputPlayerBoard.size == outputPlayerBoard.size)
+                            inputPlayerBoard.indices.forEach { xIndex ->
+                                "Board size cannot change during attack" using (inputPlayerBoard[xIndex].size
+                                        == outputPlayerBoard[xIndex].size)
+                                inputPlayerBoard[xIndex].indices
+                                        .asSequence()
+                                        .filter { inputPlayerBoard[xIndex][it] != outputPlayerBoard[xIndex][it] }
+                                        .forEach {yIndex ->
+                                            boardChanges[party]?.add(Pair(Pair(xIndex, yIndex), outputPlayerBoard[xIndex][yIndex]))
+                                        }
+                            }
+                        }
+                    }
+                }
+
+                "The number of attacks must equal the number of board changes" using (attack.shots.size == boardChanges.values.flatten().size)
+                attack.shots.forEach {
+                    "Board has changed but that change is not included in the attack." using (boardChanges[it.adversary]?.contains(
+                            Pair(it.coordinates, it.hitOrMiss))!!)
+                }
             }
         }
     }
 
     interface Commands : CommandData {
 
-        class IssueGame: Commands
+        class IssueGame : Commands
 
         class StartGame : Commands
 
         data class Attack(
                 val shots: List<Shot>,
                 val attacker: Party
-        ): Commands
+        ) : Commands
 
         @CordaSerializable
         data class Shot(
-                val coordinates: Pair<Int,Int>,
+                val coordinates: Pair<Int, Int>,
                 val adversary: Party,
                 var hitOrMiss: HitOrMiss
         )
