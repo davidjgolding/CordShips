@@ -126,9 +126,7 @@ object AttackFlow {
                     }
                 }
             }
-
             val txId = subFlow(signTransactionFlow).id
-
             subFlow(ReceiveFinalityFlow(otherPartySession, expectedTxId = txId))
         }
     }
