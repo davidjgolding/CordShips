@@ -22,97 +22,93 @@ data class Shot(
         val adversary: Party
 )
 
-object AttackFlow {
-    @InitiatingFlow
-    @StartableByRPC
-    class Initiator(val shots: List<Shot>, val gameStateId: UniqueIdentifier) : FlowLogic<PublicGameState>() {
-        @Suspendable
-        override fun call(): PublicGameState {
+@StartableByRPC
+@InitiatingFlow
+class AttackFlow(private val shots: List<Shot>, private val gameStateId: UniqueIdentifier): FlowLogic<PublicGameState>() {
 
-            if (shots.isEmpty()) {
-                throw InvalidParameterException("Please define the shots for the attack.")
-            }
-
-            if(shots.map { it.adversary }.distinct().size < shots.size) {
-                throw InvalidParameterException("There are duplicate adversaries in the attack.")
-            }
-
-            val me = serviceHub.myInfo.legalIdentities.first()
-
-            val gameStateAndRef = serviceHub.loadPublicGameState(gameStateId)
-            val gameState = gameStateAndRef.state.data
-
-            if (gameState.status == GameStatus.GAME_NOT_STARTED) {
-                throw InvalidParameterException("The game haven't been started yet.")
-            }
-            else if (gameState.status == GameStatus.GAME_OVER) {
-                throw InvalidParameterException("The game is over.")
-            }
-
-            if (gameState.getCurrentPlayerParty() != me) {
-                throw InvalidParameterException("It's not my turn to play.")
-            }
-
-            if(shots.any { it.adversary == me }) {
-                throw InvalidParameterException("You cannot attack yourself.")
-            }
-
-            val outcomes = shots.map {
-                val hitOrMiss = subFlow(HitQueryFlow.Initiator(it.adversary, it.coordinates, gameState.turnCount, gameStateId))
-                if (hitOrMiss == HitOrMiss.UNKNOWN) {
-                    throw InvalidParameterException("The answer was already requested once.")
-                }
-                PublicGameContract.Commands.Shot(it.coordinates, it.adversary, hitOrMiss)
-            }
-
-            var playedGameState = gameState
-            outcomes.forEach {
-                playedGameState = playedGameState.updateBoardWithAttack(it.coordinates, it.adversary, it.hitOrMiss)
-            }
-            playedGameState = playedGameState.endTurn()
-
-
-            val publicKeys = gameState.participants.map { it.owningKey }.toMutableList()
-
-            val notary = serviceHub.defaultNotary()
-            val txCommand = Command(PublicGameContract.Commands.Attack(outcomes, me), publicKeys)
-            val txBuilder = TransactionBuilder(notary)
-                    .addInputState(gameStateAndRef)
-                    .addOutputState(playedGameState, PublicGameContract.ID)
-                    .addCommand(txCommand)
-
-            txBuilder.verify(serviceHub)
-
-            val partSignedTx = serviceHub.signInitialTransaction(txBuilder)
-
-            val otherPartySessions = gameState.participants.filter { it != me }.map {
-                initiateFlow(it)
-            }.toSet()
-
-            val fullySignedTx = subFlow(CollectSignaturesFlow(partSignedTx, otherPartySessions))
-
-            val tx = subFlow(FinalityFlow(fullySignedTx, otherPartySessions))
-
-            return tx.coreTransaction.outputsOfType<PublicGameState>().single()
+    @Suspendable
+    override fun call(): PublicGameState {
+        if (shots.isEmpty()) {
+            throw InvalidParameterException("Please define the shots for the attack.")
         }
-    }
 
-    @InitiatedBy(Initiator::class)
-    class Acceptor(val otherPartySession: FlowSession) : FlowLogic<Unit>() {
-        @Suspendable
-        override fun call() {
-            val signTransactionFlow = object : SignTransactionFlow(otherPartySession) {
-                override fun checkTransaction(stx: SignedTransaction) = requireThat {
-                    val output = stx.tx.outputs.single().data
-                }
-            }
-
-            val txId = subFlow(signTransactionFlow).id
-
-            subFlow(ReceiveFinalityFlow(otherPartySession, expectedTxId = txId))
+        if (shots.map { it.adversary }.distinct().size < shots.size) {
+            throw InvalidParameterException("There are duplicate adversaries in the attack.")
         }
+
+        val me = serviceHub.myInfo.legalIdentities.first()
+
+        val gameStateAndRef = serviceHub.loadPublicGameState(gameStateId)
+        val gameState = gameStateAndRef.state.data
+
+        if (gameState.status == GameStatus.GAME_NOT_STARTED) {
+            throw InvalidParameterException("The game haven't been started yet.")
+        } else if (gameState.status == GameStatus.GAME_OVER) {
+            throw InvalidParameterException("The game is over.")
+        }
+
+        if (gameState.getCurrentPlayerParty() != me) {
+            throw InvalidParameterException("It's not my turn to play.")
+        }
+
+        if (shots.any { it.adversary == me }) {
+            throw InvalidParameterException("You cannot attack yourself.")
+        }
+
+        val outcomes = shots.map {
+            val hitOrMiss = subFlow(HitQueryFlow.Initiator(it.adversary, it.coordinates, gameState.turnCount, gameStateId))
+            if (hitOrMiss == HitOrMiss.UNKNOWN) {
+                throw InvalidParameterException("The answer was already requested once.")
+            }
+            PublicGameContract.Commands.Shot(it.coordinates, it.adversary, hitOrMiss)
+        }
+
+        var playedGameState = gameState
+        outcomes.forEach {
+            playedGameState = playedGameState.updateBoardWithAttack(it.coordinates, it.adversary, it.hitOrMiss)
+        }
+        playedGameState = playedGameState.endTurn()
+
+
+        val publicKeys = gameState.participants.map { it.owningKey }.toMutableList()
+
+        val notary = serviceHub.defaultNotary()
+        val txCommand = Command(PublicGameContract.Commands.Attack(outcomes, me), publicKeys)
+        val txBuilder = TransactionBuilder(notary)
+                .addInputState(gameStateAndRef)
+                .addOutputState(playedGameState, PublicGameContract.ID)
+                .addCommand(txCommand)
+
+        txBuilder.verify(serviceHub)
+
+        val partSignedTx = serviceHub.signInitialTransaction(txBuilder)
+
+        val otherPartySessions = gameState.participants.filter { it != me }.map {
+            initiateFlow(it)
+        }.toSet()
+
+        val fullySignedTx = subFlow(CollectSignaturesFlow(partSignedTx, otherPartySessions))
+
+        val tx = subFlow(FinalityFlow(fullySignedTx, otherPartySessions))
+
+        return tx.coreTransaction.outputsOfType<PublicGameState>().single()
+
     }
 }
+@InitiatedBy(AttackFlow::class)
+class AttackFlowResponder(val otherPartySession: FlowSession) : FlowLogic<Unit>() {
+    @Suspendable
+    override fun call() {
+        val signTransactionFlow = object : SignTransactionFlow(otherPartySession) {
+            override fun checkTransaction(stx: SignedTransaction) = requireThat {
+                val output = stx.tx.outputs.single().data
+            }
+        }
+        val txId = subFlow(signTransactionFlow).id
+        subFlow(ReceiveFinalityFlow(otherPartySession, expectedTxId = txId))
+    }
+}
+
 
 
 
